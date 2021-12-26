@@ -79,7 +79,8 @@ def pose_commander(x, y, z):
         client = rospy.ServiceProxy("PoseCommand", PoseCommand)
         resp = client(x, y, z)
 
-        wait_until_pose(x, y, z)
+        #wait_until_pose(x, y, z)
+        rospy.sleep(5)
 
         return resp
     except rospy.ServiceException as e:
