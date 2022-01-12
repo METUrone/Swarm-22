@@ -1,9 +1,12 @@
-#!/usr/bin/env python
-import rospy 
-from geometry_msgs.msg import PoseStamped
-from mavros_msgs.msg import * 
-from mavros_msgs.srv import *
-from Agent import Agent 
-from Iris import Iris 
-from swarm.srv import PoseCommand
+#!/usr/bin/env python3
 
+from Iris import Iris 
+from threading import Thread
+
+
+if __name__ == "__main__":
+    drone1 = Iris(1)
+    drone0 = Iris(0)
+
+    Thread(target = drone0.draw_square(5)).start()
+    Thread(target = drone1.draw_square(5)).start()

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import rospy
 from mavros_msgs.srv import CommandTOL 
@@ -7,14 +7,14 @@ from nav_msgs.msg import Odometry
 from sensor_msgs.msg import NavSatFix
 
 import math
-
+import sys
 from swarm.srv import PoseCommand
 
 from copy import deepcopy
 
 gps_pose = NavSatFix()
 odomery_pose = Odometry()
-
+id = 3
 
 def wait_until_pose(x, y, z):
     rate = rospy.Rate(5)
@@ -46,21 +46,26 @@ def current_odometry_pose_callback(data):
     global odomery_pose
     odomery_pose = deepcopy(data)
     
-    
+
+
+
 def current_odometry_pose():
-    odometry_sub = rospy.Subscriber("/uav0/mavros/global_position/local", Odometry, current_odometry_pose_callback)
+    global id
+    odometry_sub = rospy.Subscriber("/uav{}/mavros/global_position/local".format(id), Odometry, current_odometry_pose_callback)
 
 def current_gps_pose():
-    pose_sub = rospy.Subscriber("/uav0/mavros/global_position/global", NavSatFix, current_gps_pose_callback)
+    global id
+    pose_sub = rospy.Subscriber("/uav{}/mavros/global_position/global".format(id), NavSatFix, current_gps_pose_callback)
 
 def land(): # doesn't work !!!!!!!!!!!! 
+    global id
     try:
 
         pose_commander(odomery_pose.pose.pose.position.x, odomery_pose.pose.pose.position.y, 0)
 
-        rospy.wait_for_service("/uav0/mavros/cmd/land")
+        rospy.wait_for_service("/uav{}/mavros/cmd/land".format(id))
 
-        land_service = rospy.ServiceProxy("/uav0/mavros/cmd/land", CommandTOL)
+        land_service = rospy.ServiceProxy("/uav{}/mavros/cmd/land".format(id), CommandTOL)
         land_service(min_pitch=0, yaw=0, latitude=0, longitude=0, altitude=0)
 
         print("land service called")
@@ -71,12 +76,13 @@ def land(): # doesn't work !!!!!!!!!!!!
         return False
 
 def pose_commander(x, y, z):
+    global id
 
     try:
 
-        rospy.wait_for_service("PoseCommand")
+        rospy.wait_for_service("PoseCommand{}".format(id))
 
-        client = rospy.ServiceProxy("PoseCommand", PoseCommand)
+        client = rospy.ServiceProxy("PoseCommand{}".format(id), PoseCommand)
         resp = client(x, y, z)
 
         #wait_until_pose(x, y, z)
@@ -99,7 +105,9 @@ def draw_square(length):
     
 
 if __name__ == "__main__":
-    rospy.init_node("commander", anonymous=True)
+    id = sys.argv[1]
+    rospy.init_node("commander{}".format(id), anonymous=True)
+
     rate = rospy.Rate(0.5)
     rate.sleep()
 

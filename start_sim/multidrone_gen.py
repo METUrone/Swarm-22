@@ -37,7 +37,7 @@ str = """
         <include file="$(find px4)/launch/single_vehicle_spawn.launch">
             <arg name="x" value="{}"/>
             <arg name="y" value="{}"/>
-            <arg name="z" value="{}"/>
+            <arg name="z" value="0"/>
             <arg name="R" value="0"/>
             <arg name="P" value="0"/>
             <arg name="Y" value="0"/>
@@ -62,8 +62,8 @@ n = int(sys.argv[1])
 str2=""
 
 for i in range(n):
-    global str2, str
-    str2 = str2 + str.format(i, i, i, i+14540, i+14580, i, i, i, i+14560, i+4560)
+
+    str2 = str2 + str.format(i, i, i, i+14540, i+14580, i, i, i+14560, i+4560)
 
 result = begin + str2 + end
 
@@ -74,5 +74,5 @@ try:
     f.write(result)
     f.close()
     print("success")
-except(e):
-    print(e)
+except:
+    print("error")

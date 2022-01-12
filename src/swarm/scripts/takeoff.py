@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import rospy 
 import mavros
 
@@ -39,7 +39,7 @@ def state_listener():
 
 if __name__ == '__main__':
     
-    rospy.init_node('takeoff', anonymous=True)
+    rospy.init_node("takeoff{}".format(sys.argv[1]), anonymous=True)
     rate = rospy.Rate(10)
 
     rospy.wait_for_service("/uav{}/mavros/cmd/arming".format(sys.argv[1]))
@@ -48,7 +48,7 @@ if __name__ == '__main__':
     rospy.wait_for_service("/uav{}/mavros/set_mode".format(sys.argv[1])) 
     set_mode_client = rospy.ServiceProxy("/uav{}/mavros/set_mode".format(sys.argv[1]), SetMode)
 
-    command_service = rospy.Service("PoseCommand", PoseCommand, position_command)
+    command_service = rospy.Service("PoseCommand{}".format(sys.argv[1]), PoseCommand, position_command)
 
     pose_pub = rospy.Publisher("/uav{}/mavros/setpoint_position/local".format(sys.argv[1]), PoseStamped, queue_size=10)
     pose_pub.publish(pose)
@@ -71,7 +71,7 @@ if __name__ == '__main__':
 
         while not rospy.is_shutdown():
             if state.mode != "OFFBOARD" and (rospy.Time.now() - last_request > rospy.Duration(5.0)):
-                if set_mode_client(base_mode=0, custom_mode="OFFBOARD"):
+                if set_mode_client(base_mode=0, custom_mode="OFFBOARD") and state.mode == "OFFBOARD":
                     print("OFFBOARD")
                     last_request = rospy.Time.now()
             else:
