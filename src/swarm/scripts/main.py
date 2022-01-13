@@ -5,8 +5,14 @@ from threading import Thread
 
 
 if __name__ == "__main__":
-    drone1 = Iris(1)
-    drone0 = Iris(0)
+    
+    num_of_drones = 3
+    drones = []
+    for i in range(3):
+        drones.append(Iris(i))
 
-    Thread(target = drone0.draw_square(5)).start()
-    Thread(target = drone1.draw_square(5)).start()
+    Thread(target = drones[0].draw_square, args=(5,)).start()
+    Thread(target = drones[1].draw_square, args=(5,)).start()
+    Thread(target = drones[2].draw_square, args=(5,)).start()
+    
+    

@@ -58,7 +58,7 @@ class Iris:
             resp = client(x, y, z)
 
             #wait_until_pose(x, y, z)
-            rospy.sleep(5)
+            rospy.sleep(2)
 
             return resp
         except rospy.ServiceException as e:
