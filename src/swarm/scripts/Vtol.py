@@ -11,10 +11,10 @@ from swarm.srv import PoseCommand
 
 from copy import deepcopy
 
-class Iris:
+class Vtol:
     def __init__(self, id):
         self.id = id
-        rospy.init_node("iris", anonymous=True)
+        rospy.init_node("Vtol", anonymous=True)
 
         rate = rospy.Rate(10)
         rate.sleep()
@@ -25,12 +25,12 @@ class Iris:
         self.pose_sub = rospy.Subscriber("/uav{}/mavros/global_position/global".format(self.id), NavSatFix, self.current_gps_pose_callback)
         self.odometry_sub = rospy.Subscriber("/uav{}/mavros/global_position/local".format(self.id), Odometry, self.current_odometry_pose_callback)
 
-        print("Iris{} waiting...".format(self.id))
+        print("Vtol{} waiting...".format(self.id))
         
         while self.gps_pose_getter().latitude == 0:
             rate.sleep()
 
-        print("Iris{} ready".format(self.id))
+        print("Vtol{} ready".format(self.id))
 
 
     def current_gps_pose_callback(self, data):
@@ -73,4 +73,8 @@ class Iris:
 
         self.pose_commander(0, 0, length)
 
-    
+    def vtol_transition(self):
+        rospy.wait_for_service("/uav{}/mavros/cmd/vtol_transition".format(self.id))
+        client = rospy.ServiceProxy("/uav{}/mavros/cmd/vtol_transition".format(self.id), CommandVtolTransition)
+        resp = client(state= 4)
+        return resp

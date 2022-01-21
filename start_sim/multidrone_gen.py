@@ -1,12 +1,22 @@
 import sys 
 
+try:
+    if len(sys.argv) == 2:
+        vehicle = "iris"
+    elif sys.argv[2] == "-i":
+        vehicle = "iris"
+    elif sys.argv[2] == "-v":
+        vehicle = "standard_vtol"
+except IndexError:
+    ()
+
 begin = """<?xml version="1.0"?>
 <launch>
     <!-- MAVROS posix SITL environment launch script -->
     <!-- launches Gazebo environment and 2x: MAVROS, PX4 SITL, and spawns vehicle -->
     <!-- vehicle model and world -->
     <arg name="est" default="ekf2"/>
-    <arg name="vehicle" default="iris"/>
+    <arg name="vehicle" default="{}"/>
     <arg name="world" default="$(find mavlink_sitl_gazebo)/worlds/mcmillian_airfield.world"/>
     <!-- gazebo configs -->
     <arg name="gui" default="true"/>
@@ -21,7 +31,7 @@ begin = """<?xml version="1.0"?>
         <arg name="verbose" value="$(arg verbose)"/>
         <arg name="paused" value="$(arg paused)"/>
     </include>
-"""
+""".format(vehicle)
 
 end = """
 </launch>
@@ -63,16 +73,15 @@ str2=""
 
 for i in range(n):
 
-    str2 = str2 + str.format(i, i, i, i+14540, i+14580, i, i, i+14560, i+4560)
+    str2 = str2 + str.format(i, i, i, i+14540, i+14580, i*2, i*2, i+14560, i+4560)
 
 result = begin + str2 + end
 
 print(result)
 
-try:
-    f = open("multi_uav_mavros_sitl.launch", "w")
-    f.write(result)
-    f.close()
-    print("success")
-except:
-    print("error")
+
+f = open("../../PX4-Autopilot/launch/multi_uav_mavros_sitl.launch", "w")
+f.write(result)
+f.close()
+print("success")
+

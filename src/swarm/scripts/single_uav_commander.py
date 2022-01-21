@@ -51,11 +51,11 @@ def current_odometry_pose_callback(data):
 
 def current_odometry_pose():
     global id
-    odometry_sub = rospy.Subscriber("/uav{}/mavros/global_position/local".format(id), Odometry, current_odometry_pose_callback)
+    odometry_sub = rospy.Subscriber("/mavros/global_position/local", Odometry, current_odometry_pose_callback)
 
 def current_gps_pose():
     global id
-    pose_sub = rospy.Subscriber("/uav{}/mavros/global_position/global".format(id), NavSatFix, current_gps_pose_callback)
+    pose_sub = rospy.Subscriber("/mavros/global_position/global", NavSatFix, current_gps_pose_callback)
 
 def land(): # doesn't work !!!!!!!!!!!! 
     global id
@@ -63,9 +63,9 @@ def land(): # doesn't work !!!!!!!!!!!!
 
         pose_commander(odomery_pose.pose.pose.position.x, odomery_pose.pose.pose.position.y, 0)
 
-        rospy.wait_for_service("/uav{}/mavros/cmd/land".format(id))
+        rospy.wait_for_service("/mavros/cmd/land")
 
-        land_service = rospy.ServiceProxy("/uav{}/mavros/cmd/land".format(id), CommandTOL)
+        land_service = rospy.ServiceProxy("/mavros/cmd/land", CommandTOL)
         land_service(min_pitch=0, yaw=0, latitude=0, longitude=0, altitude=0)
 
         print("land service called")
@@ -80,9 +80,9 @@ def pose_commander(x, y, z):
 
     try:
 
-        rospy.wait_for_service("PoseCommand{}".format(id))
+        rospy.wait_for_service("PoseCommand")
 
-        client = rospy.ServiceProxy("PoseCommand{}".format(id), PoseCommand)
+        client = rospy.ServiceProxy("PoseCommand", PoseCommand)
         resp = client(x, y, z)
 
         #wait_until_pose(x, y, z)
@@ -106,7 +106,9 @@ def draw_square(length):
 
 if __name__ == "__main__":
     id = sys.argv[1]
-    rospy.init_node("commander{}".format(id), anonymous=True)
+    if id == -1:
+        id = ""
+    rospy.init_node("commander", anonymous=True)
 
     rate = rospy.Rate(0.5)
     rate.sleep()

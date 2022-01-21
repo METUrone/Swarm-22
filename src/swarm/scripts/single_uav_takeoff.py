@@ -7,7 +7,6 @@ from mavros_msgs.msg import *
 from mavros_msgs.srv import * 
 from swarm.srv import PoseCommand, PoseCommandResponse
 
-import sys
 
 
 pose = PoseStamped()
@@ -31,7 +30,7 @@ def state_callback(data):
     return
 
 def state_listener():
-    rospy.Subscriber("/uav{}/mavros/state".format(sys.argv[1]), State, state_callback)
+    rospy.Subscriber("/mavros/state", State, state_callback)
     rate = rospy.Rate(100)
     rate.sleep()
 
@@ -39,18 +38,18 @@ def state_listener():
 
 if __name__ == '__main__':
     
-    rospy.init_node("takeoff{}".format(sys.argv[1]), anonymous=True)
+    rospy.init_node("takeoff", anonymous=True)
     rate = rospy.Rate(10)
 
-    rospy.wait_for_service("/uav{}/mavros/cmd/arming".format(sys.argv[1]))
-    arming_client = rospy.ServiceProxy("/uav{}/mavros/cmd/arming".format(sys.argv[1]), CommandBool)
+    rospy.wait_for_service("/mavros/cmd/arming")
+    arming_client = rospy.ServiceProxy("/mavros/cmd/arming", CommandBool)
 
-    rospy.wait_for_service("/uav{}/mavros/set_mode".format(sys.argv[1])) 
-    set_mode_client = rospy.ServiceProxy("/uav{}/mavros/set_mode".format(sys.argv[1]), SetMode)
+    rospy.wait_for_service("/mavros/set_mode") 
+    set_mode_client = rospy.ServiceProxy("/mavros/set_mode", SetMode)
 
-    command_service = rospy.Service("PoseCommand{}".format(sys.argv[1]), PoseCommand, position_command)
+    command_service = rospy.Service("PoseCommand", PoseCommand, position_command)
 
-    pose_pub = rospy.Publisher("/uav{}/mavros/setpoint_position/local".format(sys.argv[1]), PoseStamped, queue_size=10)
+    pose_pub = rospy.Publisher("/mavros/setpoint_position/local", PoseStamped, queue_size=10)
     pose_pub.publish(pose)
 
     set_mode = SetMode()
@@ -63,10 +62,7 @@ if __name__ == '__main__':
         pose_pub.publish(pose)
         state_listener()
 
-    if state.connected:
-        print("CONNECTED") 
-    else:
-        print("CONNECTION FAILED")
+    print(state.connected) 
 
     last_request = rospy.Time.now()
 
