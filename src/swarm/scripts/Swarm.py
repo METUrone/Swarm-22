@@ -10,7 +10,7 @@ class Swarm:
     def __init__(self,num_of_drones,vehicle):
         self.agents = []
         self.vehicle = vehicle
-        
+
         if vehicle == "Iris":
             for i in range(num_of_drones):
                 self.add_drone(i)
@@ -21,7 +21,7 @@ class Swarm:
         simulation_origin_longitude = 8.5455935
 
         for i in range(len(self.agents)):
-            pose = self.distance_of_drones(drone_a=self.agents[i], lat_b=simulation_origin_latitude, long_b=simulation_origin_longitude)
+            pose = self.distance_to_pose(drone_a=self.agents[i], lat_b=simulation_origin_latitude, long_b=simulation_origin_longitude)
             print(self.agents[i].id)
             self.agents[i].set_starting_pose(pose[0], pose[1]) #Agent must be in the starting position (locally 0, 0) height does not matter
             self.agents[i].get_global_pose()
@@ -49,7 +49,44 @@ class Swarm:
         for i in range(len(self.agents)):
             Thread(target=self.agents[i].move_global, args=(coordinates[i][0], coordinates[i][1], 5)).start()
 
-    
+    def single_potential_field(self, radius, id):
+        coordinates = self.formation_coordinates(radius)
+        attractive_constant = 2
+        repulsive_constant = 0.002
+        repulsive_force_x = 0
+        repulsive_force_y = 0
+
+        for _ in range(100):
+
+            attractive_force_x = (coordinates[id][0] - self.agents[id].get_global_pose().pose.pose.position.x)*attractive_constant
+            attractive_force_y = (coordinates[id][1] - self.agents[id].get_global_pose().pose.pose.position.y)*attractive_constant
+
+            for i in range(len(self.agents)):
+                if i == id:
+                    continue
+                a = self.agents[id].get_global_pose().pose.pose.position.y - self.agents[i].get_global_pose().pose.pose.position.y
+                if a < 0:
+                    repulsive_force_y += (1/(a**2))*repulsive_constant*-1
+                else:
+                    repulsive_force_y += (1/(a**2))*repulsive_constant
+
+                b = self.agents[id].get_global_pose().pose.pose.position.x - self.agents[i].get_global_pose().pose.pose.position.x
+                if b < 0:
+                    repulsive_force_x += (1/(b**2))*repulsive_constant*-1
+                else:
+                    repulsive_force_x += (1/(b**2))*repulsive_constant
+
+            vel_x = attractive_force_x + repulsive_force_x
+            vel_y = attractive_force_y + repulsive_force_y
+            self.agents[id].velocity_command(vel_x, vel_y)
+            time.sleep(0.1)
+
+        self.agents[id].move_global(coordinates[id][0], coordinates[id][1], 5)
+
+    def form_via_potential_field(self, radius):
+        for i in range(len(self.agents)):
+            Thread(target=self.single_potential_field, args = (radius,i)).start()
+
 
     def add_drone(self,id):
    
@@ -64,9 +101,9 @@ class Swarm:
         lat_b = drone_b.gps_pose_getter().latitude
         long_b = drone_b.gps_pose_getter().longitude
 
-        return self.distance_of_drones(drone_a, lat_b, long_b)
+        return self.distance_to_pose(drone_a, lat_b, long_b)
 
-    def distance_of_drones(self, drone_a, lat_b, long_b): # in meters
+    def distance_to_pose(self, drone_a, lat_b, long_b): # in meters
 
         lat_a = drone_a.gps_pose_getter().latitude
         x_distance = 111139 * (lat_a - lat_b)

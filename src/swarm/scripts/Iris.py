@@ -62,7 +62,7 @@ class Iris:
         self.global_pose.pose.pose.position.z = self.odomery_pose.pose.pose.position.z
 
     def get_global_pose(self):
-        print("x: {}\ny: {}\n".format(self.global_pose.pose.pose.position.x, self.global_pose.pose.pose.position.y))
+        #print("x: {}\ny: {}\n".format(self.global_pose.pose.pose.position.x, self.global_pose.pose.pose.position.y))
         return self.global_pose
 
     def get_odometry_pose(self):
