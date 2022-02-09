@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import rospy
+import time
 
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import NavSatFix
@@ -15,8 +16,7 @@ class Iris:
         self.id = id
         rospy.init_node("iris", anonymous=True)
 
-        rate = rospy.Rate(10)
-        rate.sleep()
+        time.sleep(1/10)
 
         self.odomery_pose = Odometry()
         self.gps_pose = NavSatFix()
@@ -34,7 +34,7 @@ class Iris:
         print("Iris{} waiting...".format(self.id))
         
         while self.gps_pose_getter().latitude == 0:
-            rate.sleep()
+            time.sleep(1/10)
 
         print("Iris{} ready".format(self.id))
 
@@ -62,7 +62,6 @@ class Iris:
         self.global_pose.pose.pose.position.z = self.odomery_pose.pose.pose.position.z
 
     def get_global_pose(self):
-        print("x: {}\ny: {}\n".format(self.global_pose.pose.pose.position.x, self.global_pose.pose.pose.position.y))
         return self.global_pose
 
     def get_odometry_pose(self):

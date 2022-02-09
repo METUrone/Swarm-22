@@ -12,8 +12,4 @@ if __name__ == "__main__":
 
     swarm = Swarm(num_of_agents, vehicle)
     
-    #swarm.form_via_pose(num_of_agents)
-    #time.sleep(3)
-    #swarm.repel(20, 1)
-    #time.sleep(15)
-    swarm.return_starting_pose()
+    swarm.move_with_swarm(1, 1000000, (-10, -10), 0.1)
