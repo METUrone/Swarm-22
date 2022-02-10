@@ -37,7 +37,7 @@ class Swarm:
 
         
         vectors[0][0]=0
-        vectors[0][1]=radius
+        vectors[0][1]=radius*2
 
         angle = (360/self.num_of_agents)*0.0174532925 #radians 
         
@@ -45,12 +45,24 @@ class Swarm:
             vectors[i][0] = vectors[i-1][0]*math.cos(angle) - vectors[i-1][1]*math.sin(angle)
             vectors[i][1] = vectors[i-1][1]*math.cos(angle) + vectors[i-1][0]*math.sin(angle)
 
+        print(vectors)
         return vectors
 
     def form_via_pose(self, radius):
         coordinates = self.formation_coordinates(radius)
-        for i in range(len(self.agents)):
-            Thread(target=self.agents[i].move_global, args=(coordinates[i][0], coordinates[i][1], 5)).start()
+        while True:
+            self.potential_field(1, 10000000, coordinates, 1)
+            if self.steady_state():
+                for i in range(self.num_of_agents):
+                    self.agents[i].velocity_command(0,0,0,0,0,0)
+                    self.agents[i].move_local(self.agents[i].odomery_pose.pose.pose.position.x, self.agents[i].odomery_pose.pose.pose.position.y, 5)
+                return
+            for i in range(self.num_of_agents):
+                #if self.steady_agents[i]:
+                #    self.agents[i].velocity_command(0,0,0,0,0,0)
+                #    continue
+                force = self.F[i]
+                self.agents[i].velocity_command(force[0], force[1], 0, 0, 0, 0)
 
     
 
@@ -121,25 +133,26 @@ class Swarm:
                 else:
                     continue
 
-                #for k in range(2):
-                #    if (force[k] > 10 and force[k] < -10):
-                #        force[k] = 0
-
 
             if target != False:
-                direction = [target[0] - self.agents[i].global_pose.pose.pose.position.x, target[1] - self.agents[i].global_pose.pose.pose.position.y]
-                distance = self.distance_of_drones(self.agents[i], target[0], target[1])[2]
-                if distance >= treshold:
-                    force += np.dot(direction, attractive_effect)
-                else:
-                    force += np.dot(direction, (attractive_effect*treshold/distance))
+                for j in range(len(target)):
+                    print("i: ", i, "    target: ", target[j])
+                    direction = [target[j][0] - self.agents[i].global_pose.pose.pose.position.x, target[j][1] - self.agents[i].global_pose.pose.pose.position.y]
+                    distance = self.distance_of_drones(self.agents[i], target[j][0], target[j][1])[2]
+                    if distance >= treshold:
+                        force += np.dot(direction, attractive_effect)
+                    else:
+                        force += np.dot(direction, (attractive_effect*treshold/distance))
 
-                for k in range(2):
-                    if (force[k] < 0.1 and force[k] > -0.1):
-                        force[k] = 0
+                    #for k in range(2):
+                    #    if (force[k] < 0.1 and force[k] > -0.1):
+                    #        force[k] = 0
+                    print("i: ", i, "    target: ", target[j], "    force: ", force)
+                    print("pose: ", self.agents[i].odomery_pose.pose.pose.position.x, self.agents[i].odomery_pose.pose.pose.position.y)
+
 
             for k in range(2):
-                if (force[k] < 0.3 and force[k] > -0.3):
+                if (force[k] < 0.01 and force[k] > -0.01):
                     force[k] = 0
                         
 
@@ -156,12 +169,8 @@ class Swarm:
         return steady
 
     def move_with_swarm(self, treshold = 10, repulsive_effect = 10, target = False, attractive_effect = 5):
-
-        #for i in range(self.num_of_agents):
-        #    self.agents[i].move_local(self.agents[i].odomery_pose.pose.pose.position.x, self.agents[i].odomery_pose.pose.pose.position.y, (i*(2**i))%5 + 3)
-
         while True:
-            self.potential_field(treshold, repulsive_effect, target, attractive_effect)
+            self.potential_field(treshold, repulsive_effect, [target], attractive_effect)
             if self.steady_state():
                 for i in range(self.num_of_agents):
                     self.agents[i].velocity_command(0,0,0,0,0,0)

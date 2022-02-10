@@ -7,9 +7,9 @@ import time
 
 if __name__ == "__main__":
     
-    num_of_agents = 9
+    num_of_agents = 1
     vehicle = "Iris"
 
     swarm = Swarm(num_of_agents, vehicle)
     
-    swarm.move_with_swarm(1, 1000000, (-10, -10), 0.1)
+    swarm.form_via_pose(num_of_agents)
