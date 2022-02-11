@@ -12,7 +12,7 @@ class Swarm:
         self.agents = []
         self.vehicle = vehicle
         self.F = [0]*num_of_drones
-        self.steady_agents = [False]*num_of_drones
+        self.available_targets = [True] * num_of_drones
         
         if vehicle == "Iris":
             for i in range(num_of_drones):
@@ -37,7 +37,7 @@ class Swarm:
 
         
         vectors[0][0]=0
-        vectors[0][1]=radius*2
+        vectors[0][1]=radius
 
         angle = (360/self.num_of_agents)*0.0174532925 #radians 
         
@@ -45,22 +45,34 @@ class Swarm:
             vectors[i][0] = vectors[i-1][0]*math.cos(angle) - vectors[i-1][1]*math.sin(angle)
             vectors[i][1] = vectors[i-1][1]*math.cos(angle) + vectors[i-1][0]*math.sin(angle)
 
-        print(vectors)
         return vectors
+
+    def sort_coordinates(self, coordinates):
+        sorted_coordinates = [[]] * self.num_of_agents
+        for i in range(self.num_of_agents):
+            nearest_length = 0xFFFFFFFFFF
+            nearest = None
+            for j in range(self.num_of_agents):
+                if(self.available_targets[j]):
+                    length = math.sqrt((coordinates[j][0] - self.agents[self.num_of_agents-1-i].global_pose.pose.pose.position.x)*(coordinates[j][0] - self.agents[self.num_of_agents-1-i].global_pose.pose.pose.position.x) + (coordinates[j][1] - self.agents[self.num_of_agents-1-i].global_pose.pose.pose.position.y)*(coordinates[j][1] - self.agents[self.num_of_agents-1-i].global_pose.pose.pose.position.y))
+                    if length < nearest_length:
+                        nearest_length = length
+                        nearest = j
+            sorted_coordinates[self.num_of_agents-1-i] = coordinates[nearest]
+            self.available_targets[nearest] = False
+        return sorted_coordinates
 
     def form_via_pose(self, radius):
         coordinates = self.formation_coordinates(radius)
+        coordinates = self.sort_coordinates(coordinates)
         while True:
-            self.potential_field(1, 10000000, coordinates, 1)
+            self.potential_field(2, 100000000, coordinates, 5, 1)
             if self.steady_state():
                 for i in range(self.num_of_agents):
                     self.agents[i].velocity_command(0,0,0,0,0,0)
                     self.agents[i].move_local(self.agents[i].odomery_pose.pose.pose.position.x, self.agents[i].odomery_pose.pose.pose.position.y, 5)
                 return
             for i in range(self.num_of_agents):
-                #if self.steady_agents[i]:
-                #    self.agents[i].velocity_command(0,0,0,0,0,0)
-                #    continue
                 force = self.F[i]
                 self.agents[i].velocity_command(force[0], force[1], 0, 0, 0, 0)
 
@@ -120,39 +132,29 @@ class Swarm:
         for i in self.agents:
             Thread(target=i.move_local, args=(0,0,5)).start()
 
-    def potential_field(self, treshold=10, repulsive_effect=10, target=False, attractive_effect=5):
+    def potential_field(self, repulsive_treshold=10, repulsive_effect=10, target=False, attractive_treshold = 1, attractive_effect=5):        
         for i in range(self.num_of_agents):
             force = np.array([0.0, 0.0])
             for j in range(self.num_of_agents):
                 distance_tuple = self.distance_of_drones(self.agents[i], self.agents[j].gps_pose_getter().latitude, self.agents[j].gps_pose_getter().longitude)
                 distance = math.sqrt(distance_tuple[0]*distance_tuple[0] + distance_tuple[1]*distance_tuple[1])
-                if distance <= treshold and distance != 0:
+                if distance <= repulsive_treshold and distance != 0:
                     direction = [distance_tuple[0], distance_tuple[1]]
-                    coefficient = -repulsive_effect*((1/treshold)-(1/distance))*(1/(distance*distance))
+                    coefficient = -repulsive_effect*((1/repulsive_treshold)-(1/distance))*(1/(distance*distance))
                     force += np.dot(direction, coefficient)
                 else:
                     continue
 
-
             if target != False:
-                for j in range(len(target)):
-                    print("i: ", i, "    target: ", target[j])
-                    direction = [target[j][0] - self.agents[i].global_pose.pose.pose.position.x, target[j][1] - self.agents[i].global_pose.pose.pose.position.y]
-                    distance = self.distance_of_drones(self.agents[i], target[j][0], target[j][1])[2]
-                    if distance >= treshold:
-                        force += np.dot(direction, attractive_effect)
-                    else:
-                        force += np.dot(direction, (attractive_effect*treshold/distance))
-
-                    #for k in range(2):
-                    #    if (force[k] < 0.1 and force[k] > -0.1):
-                    #        force[k] = 0
-                    print("i: ", i, "    target: ", target[j], "    force: ", force)
-                    print("pose: ", self.agents[i].odomery_pose.pose.pose.position.x, self.agents[i].odomery_pose.pose.pose.position.y)
-
+                direction = [target[i][0] - self.agents[i].global_pose.pose.pose.position.x, target[i][1] - self.agents[i].global_pose.pose.pose.position.y]
+                distance = self.distance_of_drones(self.agents[i], target[i][0], target[i][1])[2]
+                if distance >= attractive_treshold:
+                    force += np.dot(direction, attractive_effect)
+                else:
+                    force += np.dot(direction, (attractive_effect*attractive_treshold/distance))
 
             for k in range(2):
-                if (force[k] < 0.01 and force[k] > -0.01):
+                if (force[k] < 0.1 and force[k] > -0.1):
                     force[k] = 0
                         
 
@@ -164,22 +166,17 @@ class Swarm:
         for i in range(self.num_of_agents):
             if self.F[i][0] != 0 or self.F[i][1] != 0:
                 steady = False
-            elif self.F[i][0] == 0 and self.F[i][1] == 0:
-                self.steady_agents[i] = True
         return steady
 
-    def move_with_swarm(self, treshold = 10, repulsive_effect = 10, target = False, attractive_effect = 5):
+    def move_with_swarm(self, repulsive_treshold = 10, repulsive_effect = 10, target = False, attractive_effect = 5):
         while True:
-            self.potential_field(treshold, repulsive_effect, [target], attractive_effect)
+            self.potential_field(repulsive_treshold, repulsive_effect, [target], repulsive_treshold, attractive_effect)
             if self.steady_state():
                 for i in range(self.num_of_agents):
                     self.agents[i].velocity_command(0,0,0,0,0,0)
                     self.agents[i].move_local(self.agents[i].odomery_pose.pose.pose.position.x, self.agents[i].odomery_pose.pose.pose.position.y, 5)
                 return
             for i in range(self.num_of_agents):
-                #if self.steady_agents[i]:
-                #    self.agents[i].velocity_command(0,0,0,0,0,0)
-                #    continue
                 force = self.F[i]
                 self.agents[i].velocity_command(force[0], force[1], 0, 0, 0, 0)
 

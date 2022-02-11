@@ -11,3 +11,4 @@ do
 done
 echo "$commandd"
 eval "$commandd"
+echo $1 > drone_count.txt
