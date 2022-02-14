@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
+from cmath import sqrt
 import math
+from re import S
 import time
 from Iris import Iris
 from threading import Thread
@@ -51,12 +53,15 @@ class Swarm:
 
     def single_potential_field(self, radius, id):
         coordinates = self.formation_coordinates(radius)
-        attractive_constant = 2
-        repulsive_constant = 0.002
+        attractive_constant = 0.3
+        repulsive_constant =-17 #-8
         repulsive_force_x = 0
         repulsive_force_y = 0
+        repulsive_threshold = 2 #3
 
-        for _ in range(100):
+        for _ in range(2000):
+            repulsive_force_x = 0
+            repulsive_force_y = 0
 
             attractive_force_x = (coordinates[id][0] - self.agents[id].get_global_pose().pose.pose.position.x)*attractive_constant
             attractive_force_y = (coordinates[id][1] - self.agents[id].get_global_pose().pose.pose.position.y)*attractive_constant
@@ -65,23 +70,22 @@ class Swarm:
                 if i == id:
                     continue
                 a = self.agents[id].get_global_pose().pose.pose.position.y - self.agents[i].get_global_pose().pose.pose.position.y
-                if a < 0:
-                    repulsive_force_y += (1/(a**2))*repulsive_constant*-1
-                else:
-                    repulsive_force_y += (1/(a**2))*repulsive_constant
-
                 b = self.agents[id].get_global_pose().pose.pose.position.x - self.agents[i].get_global_pose().pose.pose.position.x
-                if b < 0:
-                    repulsive_force_x += (1/(b**2))*repulsive_constant*-1
-                else:
-                    repulsive_force_x += (1/(b**2))*repulsive_constant
+
+                d = ((a**2) + (b**2))**(1/2)
+
+                if d < repulsive_threshold:
+                    repulsive_force_y += (1/(a**2))*(1/repulsive_threshold - 1/a)*repulsive_constant
+                    repulsive_force_x += (1/(b**2))*(1/repulsive_threshold - 1/b)*repulsive_constant
+
 
             vel_x = attractive_force_x + repulsive_force_x
             vel_y = attractive_force_y + repulsive_force_y
             self.agents[id].velocity_command(vel_x, vel_y)
-            time.sleep(0.1)
+            time.sleep(0.001)
 
-        self.agents[id].move_global(coordinates[id][0], coordinates[id][1], 5)
+        #self.agents[id].move_global(coordinates[id][0], coordinates[id][1], 5)
+        print("done")
 
     def form_via_potential_field(self, radius):
         for i in range(len(self.agents)):

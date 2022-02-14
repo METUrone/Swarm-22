@@ -7,7 +7,7 @@ END=$1
 for((i=1;i<END;i++))
 do
     echo "$i"
-    commandd+="& rosrun swarm takeoff.py "$i" > "$i".txt "
+    commandd+="& rosrun swarm takeoff.py "$i" "
 done
 echo "$commandd"
 eval "$commandd"

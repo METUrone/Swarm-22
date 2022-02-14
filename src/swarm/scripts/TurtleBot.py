@@ -4,7 +4,7 @@ import rospy
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 
-rospy.init_node("turtle_bot")
+rospy.init_node("turtlebot")
 
 
 class TurtleBot:
@@ -14,9 +14,10 @@ class TurtleBot:
         self.vel.linear.x = 0
         self.vel.angular.z = 0
 
-        self.pose = Odo
+        self.pose = Odometry()
 
         self.vel_pub = rospy.Publisher("/tb3_{}/cmd_vel".format(id), Twist, queue_size=1)
+        rospy.Subscriber("/tb3_{}/odom".format(self.id), Odometry,self.odometry_callback)
 
         print("TurtleBot{} waiting...".format(self.id))
         for i in range(10):
@@ -33,5 +34,8 @@ class TurtleBot:
 
     def pose_getter(self):
         self.pose
+
+    def odometry_callback(self, data):
+        self.pose.twist.twist.linear.x = data.twist.twist.linear.x 
 
     
