@@ -1,3 +1,6 @@
+# Detaylı Açıklama:
+# https://python.plainenglish.io/hungarian-algorithm-introduction-python-implementation-93e7c0890e15
+
 import numpy as np
 
 class Munkres:
