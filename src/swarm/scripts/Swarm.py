@@ -64,9 +64,7 @@ class Swarm:
 
         return sorted_coordinates
 
-    def single_potential_field(self, radius, id):
-        coordinates = self.formation_coordinates(radius)
-        coordinates = self.sort_coordinates(coordinates)
+    def single_potential_field(self, coordinates, id):
         attractive_constant = 0.3
         repulsive_constant =-17 #-8
         repulsive_force_x = 0
@@ -102,8 +100,10 @@ class Swarm:
         print("done")
 
     def form_via_potential_field(self, radius):
+        coordinates = self.formation_coordinates(radius)
+        coordinates = self.sort_coordinates(coordinates)
         for i in range(len(self.agents)):
-            Thread(target=self.single_potential_field, args = (radius,i)).start()
+            Thread(target=self.single_potential_field, args = (coordinates,i)).start()
 
 
     def add_drone(self,id):
