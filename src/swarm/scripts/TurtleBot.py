@@ -4,7 +4,7 @@ import rospy
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 
-rospy.init_node("turtlebot")
+rospy.init_node("turtlebot", anonymous=True)
 
 
 class TurtleBot:
@@ -26,16 +26,18 @@ class TurtleBot:
 
         print("TurtleBot{} ready".format(self.id))
 
-    def velocity(self=0, linear_x=0, linear_y=0, angular_z=0):
+    def velocity_command(self=0, linear_x=0, linear_y=0, angular_z=0):
+        print(linear_y)
         self.vel.linear.x = linear_x
-        self.vel.linear.y = linear_y
         self.vel.angular.z = angular_z
         self.vel_pub.publish(self.vel)
 
-    def pose_getter(self):
-        self.pose
+    def get_global_pose(self):
+        return self.pose
 
     def odometry_callback(self, data):
-        self.pose.twist.twist.linear.x = data.twist.twist.linear.x 
+        self.pose.pose.pose.position.x = data.pose.pose.position.x  
+        self.pose.pose.pose.position.y = data.pose.pose.position.y
+        self.pose.pose.pose.position.z = data.pose.pose.position.z
 
     
