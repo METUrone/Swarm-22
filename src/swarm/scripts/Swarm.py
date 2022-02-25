@@ -56,6 +56,7 @@ class Swarm:
         if distance <= error_radius:
             return True
         else:
+
             return False
     
     def is_formed(self, goals):
@@ -64,13 +65,10 @@ class Swarm:
              
             if self.is_goal_reached(i, goals[i]):
                 reached += 1
-            else:
-                print("{} distance".format(i))
 
         if reached == self.num_of_agents:
             return True
         else:
-            print(reached)
             return False
 
 
@@ -79,6 +77,7 @@ class Swarm:
 
         vectors[0][0]=0
         vectors[0][1]=radius
+        vectors[0][2]=height
 
         angle = (360/self.num_of_agents)*0.0174532925 #radians 
         
@@ -117,8 +116,7 @@ class Swarm:
         return min(max(float(repulsive_force_x),-1*speed_limit),speed_limit), min(max(float(repulsive_force_y),-1*speed_limit),speed_limit)
 
 
-    def single_potential_field(self, radius, id):
-        coordinates = self.formation_coordinates(radius)
+    def single_potential_field(self, radius, id, coordinates):
 
         #for _ in range(4000):
         #print("id: {}  pose: {}".format(id, self.agents[id].position()))
@@ -149,9 +147,7 @@ class Swarm:
             #for i in range(4000):
                 for i in range(len(self.agents)):
                     #Thread(target=self.single_potential_field, args = (radius,i)).start()
-                    self.single_potential_field(radius, i)
-                    print(self.is_formed(coordinates))
-                    
+                    self.single_potential_field(radius, i, coordinates)                    
                 
             
         elif self.vehicle == "Iris":
