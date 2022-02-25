@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import rospy
-import time
+import numpy as np
 
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import NavSatFix
@@ -16,7 +16,8 @@ class Iris:
         self.id = id
         rospy.init_node("iris", anonymous=True)
 
-        time.sleep(1/10)
+        rate = rospy.Rate(10)
+        rate.sleep()
 
         self.odomery_pose = Odometry()
         self.gps_pose = NavSatFix()
@@ -26,15 +27,15 @@ class Iris:
         self.pose_sub = rospy.Subscriber("/uav{}/mavros/global_position/global".format(self.id), NavSatFix, self.current_gps_pose_callback)
         self.odometry_sub = rospy.Subscriber("/uav{}/mavros/global_position/local".format(self.id), Odometry, self.current_odometry_pose_callback)
 
-        self.global_pose = Odometry()
-        self.global_pose.pose.pose.position.x = self.starting_x + self.odomery_pose.pose.pose.position.x 
-        self.global_pose.pose.pose.position.y = self.starting_y + self.odomery_pose.pose.pose.position.y 
-        self.global_pose.pose.pose.position.z = self.odomery_pose.pose.pose.position.z
+        self.global_pose = np.array([0,0,0]) #x, y, z
+        self.global_pose[0] = self.starting_x + self.odomery_pose.pose.pose.position.x 
+        self.global_pose[1] = self.starting_y + self.odomery_pose.pose.pose.position.y 
+        self.global_pose[2] = self.odomery_pose.pose.pose.position.z
 
         print("Iris{} waiting...".format(self.id))
         
         while self.gps_pose_getter().latitude == 0:
-            time.sleep(1/10)
+            rate.sleep()
 
         print("Iris{} ready".format(self.id))
 
@@ -46,9 +47,9 @@ class Iris:
     def current_odometry_pose_callback(self, data):
         
         self.odomery_pose = deepcopy(data)
-        self.global_pose.pose.pose.position.x = self.starting_x + self.odomery_pose.pose.pose.position.x
-        self.global_pose.pose.pose.position.y = self.starting_y + self.odomery_pose.pose.pose.position.y 
-        self.global_pose.pose.pose.position.z = self.odomery_pose.pose.pose.position.z
+        self.global_pose[0] = self.starting_x + self.odomery_pose.pose.pose.position.x
+        self.global_pose[1] = self.starting_y + self.odomery_pose.pose.pose.position.y 
+        self.global_pose[2] = self.odomery_pose.pose.pose.position.z
         
 
     def gps_pose_getter(self):
@@ -57,11 +58,12 @@ class Iris:
     def set_starting_pose(self, x, y):
         self.starting_x = x
         self.starting_y = y
-        self.global_pose.pose.pose.position.x = self.starting_x + self.odomery_pose.pose.pose.position.x 
-        self.global_pose.pose.pose.position.y = self.starting_y + self.odomery_pose.pose.pose.position.y 
-        self.global_pose.pose.pose.position.z = self.odomery_pose.pose.pose.position.z
+        self.global_pose[0] = self.starting_x + self.odomery_pose.pose.pose.position.x 
+        self.global_pose[1] = self.starting_y + self.odomery_pose.pose.pose.position.y 
+        self.global_pose[2] = self.odomery_pose.pose.pose.position.z
 
-    def get_global_pose(self):
+    def position(self):
+        #print("x: {}\ny: {}\n".format(self.global_pose.pose.pose.position.x, self.global_pose.pose.pose.position.y))
         return self.global_pose
 
     def get_odometry_pose(self):

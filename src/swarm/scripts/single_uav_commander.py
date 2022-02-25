@@ -7,7 +7,6 @@ from nav_msgs.msg import Odometry
 from sensor_msgs.msg import NavSatFix
 
 import math
-import sys
 from swarm.srv import PoseCommand
 
 from copy import deepcopy
@@ -105,9 +104,7 @@ def draw_square(length):
     
 
 if __name__ == "__main__":
-    id = sys.argv[1]
-    if id == -1:
-        id = ""
+
     rospy.init_node("commander", anonymous=True)
 
     rate = rospy.Rate(0.5)

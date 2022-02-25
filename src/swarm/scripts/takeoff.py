@@ -8,7 +8,6 @@ from mavros_msgs.srv import *
 from swarm.srv import PoseCommand, PoseCommandResponse, VelocityCommand, VelocityCommandResponse
 
 import sys
-import time
 
 command_state = "pose"
 
@@ -51,7 +50,8 @@ def state_callback(data):
 
 def state_listener():
     rospy.Subscriber("/uav{}/mavros/state".format(sys.argv[1]), State, state_callback)
-    time.sleep(1/100)
+    rate = rospy.Rate(100)
+    rate.sleep()
 
 
 
@@ -108,7 +108,7 @@ if __name__ == '__main__':
             elif command_state == "velocity":
                 velocity_pub.publish(velocity)
             
-            time.sleep(1/100)
+            rate.sleep()
 
     except rospy.exceptions.ROSInterruptException:
         print("\nshutdown")
