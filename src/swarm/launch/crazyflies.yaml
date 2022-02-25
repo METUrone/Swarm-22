@@ -1,13 +1,26 @@
 crazyflies:
 - channel: 100
   id: 1
-  initialPosition: [1.5, 1.5, 0.0]
+  initialPosition: [0.5, 1.5, 0.0]
   type: default
 - channel: 100
   id: 2
-  initialPosition: [3.5, 1.5, 0.0]
+  initialPosition: [1.5, 1.5, 0.0]
   type: default
 - channel: 100
   id: 3
-  initialPosition: [-0.5, 1.5, 0.0]
+  initialPosition: [2.5, 1.5, 0.0]
   type: default
+- channel: 100
+  id: 4
+  initialPosition: [0.5, 2.5, 0.0]
+  type: default
+- channel: 100
+  id: 5
+  initialPosition: [1.5, 2.5, 0.0]
+  type: default
+- channel: 100
+  id: 6
+  initialPosition: [2.5, 2.5, 0.0]
+  type: default
+

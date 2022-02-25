@@ -31,7 +31,7 @@ begin = """<?xml version="1.0"?>
         <arg name="verbose" value="$(arg verbose)"/>
         <arg name="paused" value="$(arg paused)"/>
     </include>
-""".format(vehicle)
+""".format("standard_vtol")
 
 end = """
 </launch>

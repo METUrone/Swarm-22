@@ -4,7 +4,7 @@ import rospy
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 
-rospy.init_node("turtlebot", anonymous=True)
+#rospy.init_node("turtlebot", anonymous=True)
 
 
 class TurtleBot:
