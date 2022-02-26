@@ -5,6 +5,7 @@ import time
 from Iris import Iris
 from threading import Thread
 from copy import deepcopy
+from munkres import Munkres
 
 from TurtleBot import TurtleBot
 from pycrazyswarm import Crazyswarm
@@ -85,6 +86,19 @@ class Swarm:
 
         return vectors
 
+    def sort_coordinates(self, coordinates):
+        sorted_coordinates = [[0, 0]]*self.num_of_agents
+        cost_matrix = [[math.sqrt((target[0] - drone.position()[0])**2 + (target[1] - drone.position()[1])**2) for target in coordinates] for drone in self.agents]
+        
+        assigner = Munkres()
+        assigner.fit(cost_matrix)
+        assignments = assigner.assign()
+        
+        for assignment in assignments:
+            sorted_coordinates[assignment[0]] = coordinates[assignment[1]]
+
+        return sorted_coordinates
+
     def attractive_force(self, id, target_pose, attractive_constant = 2):
         speed_limit = 0.9 # must be float
 
@@ -139,12 +153,20 @@ class Swarm:
         print(self.formation_coordinates(radius, self.num_of_agents))
 
         coordinates = self.formation_coordinates(radius, self.num_of_agents)
+        coordinates = self.sort_coordinates(coordinates)
         if self.vehicle == "Crazyflie":
             while not self.is_formed(coordinates):
             #for i in range(4000):
                 for i in range(len(self.agents)):
-                    
-                    self.single_potential_field( i, coordinates)
+                    #Thread(target=self.single_potential_field, args = (radius,i)).start()
+                    self.single_potential_field(i, coordinates)                    
+                
+            
+        elif self.vehicle == "Iris":
+            for i in range(len(self.agents)):
+                    #Thread(target=self.single_potential_field, args = (radius,i)).start()
+                    self.single_potential_field(i, coordinates)
+                    print("call")
 
             self.stop_all()
             self.timeHelper.sleep(4)  
