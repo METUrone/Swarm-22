@@ -172,9 +172,12 @@ class Swarm:
             self.timeHelper.sleep(4)  
                   
     def form_polygon(self, radius, num_of_edges): # uses potential field algorithm to form
-        print(self.formation_coordinates(radius, num_of_edges))
+        
 
-        coordinates = self.formation_coordinates(radius, num_of_edges)
+        coordinates = self.sort_coordinates(self.formation_coordinates(radius, num_of_edges))
+
+        print(coordinates)
+
         if self.vehicle == "Crazyflie":
             while not self.is_formed(coordinates):
             #for i in range(4000):
@@ -287,6 +290,8 @@ class Swarm:
 
     def add_agent_to_formation(self):
         self.agents.append(self.crazyswarm.allcfs.crazyflies[len(self.agents)])
+        self.num_of_agents += 1
+
         self.takeoff(len(self.agents)-1)
         self.timeHelper.sleep(1)
         self.form_polygon(2, len(self.agents))
@@ -294,6 +299,7 @@ class Swarm:
 
     def omit_agent(self):
         self.agents[len(self.agents)-1].land(0.03, 2)
+        self.num_of_agents -= 1
         self.agents.pop()
         self.timeHelper.sleep(1)
         self.form_via_potential_field(2)
@@ -316,3 +322,21 @@ class Swarm:
 
         self.form_coordinates(coordinates)
         self.timeHelper.sleep(2)
+
+    def circle(self, id, totalTime, radius, kPosition):
+        startTime = self.timeHelper.time()
+        pos = self.agents[id].position()
+        startPos = self.agents[id].initialPosition + np.array([0, 0, 1])
+        center_circle = startPos - np.array([radius, 0, 0])
+        while True:
+            time = self.timeHelper.time() - startTime
+            omega = 2 * np.pi / totalTime
+            vx = -radius * omega * np.sin(omega * time)  
+            vy = radius * omega * np.cos(omega * time)
+            desiredPos = center_circle + radius * np.array(
+                [np.cos(omega * time), np.sin(omega * time), 0])
+            errorX = desiredPos - self.agents[id].position() 
+            self.agents[id].cmdVelocityWorld(np.array([vx, vy, 0] + kPosition * errorX), yawRate=0)
+            self.timeHelper.sleepForRate(30)
+            if time >= totalTime:
+                return
