@@ -13,6 +13,7 @@ if __name__ == "__main__":
     vehicle2 = "Crazyflie"
     swarm = Swarm(6, vehicle2)
     swarm.form_via_potential_field(3)
+    swarm1, swarm2 = swarm.split_formation()
     #swarm.omit_agent()
     swarm.land()
     swarm.timeHelper.sleep(4)

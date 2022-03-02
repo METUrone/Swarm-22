@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from tokenize import group
 import numpy as np
 import math
 import time
@@ -12,39 +13,46 @@ from pycrazyswarm import Crazyswarm
 
 
 class Swarm:
-    def __init__(self,num_of_drones,vehicle):
+    def __init__(self,num_of_drones,vehicle, first_time = True, crazyswarm_class=None):
         self.agents = []
         self.vehicle = vehicle
 
-        if vehicle == "Iris":
+        if vehicle == "Crazyflie":
+            if first_time:
+                self.crazyswarm = Crazyswarm()
+                self.agents = self.crazyswarm.allcfs.crazyflies[0:num_of_drones]
+                self.timeHelper = self.crazyswarm.timeHelper
+
+                for i in range(len(self.agents)):
+                    self.takeoff(i)
+                    print(self.agents[i].position()[0])
+            else:
+                self.timeHelper = crazyswarm_class.timeHelper
+            
+            self.timeHelper.sleep(1)
+        
+        elif vehicle == "Iris":
+            
             for i in range(num_of_drones):
                 self.add_drone(i)
-        elif vehicle == "TurtleBot":
-            for i in range(num_of_drones):
-                self.add_turtlebot(i)
-        elif vehicle == "Crazyflie":
-            self.crazyswarm = Crazyswarm()
-            self.agents = self.crazyswarm.allcfs.crazyflies[0:num_of_drones]
-            self.timeHelper = self.crazyswarm.timeHelper
 
-            for i in range(len(self.agents)):
-                self.takeoff(i)
-                print(self.agents[i].position()[0])
-
-        self.timeHelper.sleep(1)
-
-        self.num_of_agents = len(self.agents)
-        #self.crazyswarm
-
-        simulation_origin_latitude = 47.3977419
-        simulation_origin_longitude = 8.5455935
-
-        if self.vehicle == "Iris":
             for i in range(len(self.agents)):
                 pose = self.distance_to_pose(drone_a=self.agents[i], lat_b=simulation_origin_latitude, long_b=simulation_origin_longitude)
                 print(self.agents[i].id)
                 self.agents[i].set_starting_pose(pose[0], pose[1]) #Agent must be in the starting position (locally 0, 0) height does not matter
                 self.agents[i].position()
+
+        elif vehicle == "TurtleBot":
+
+            for i in range(num_of_drones):
+                self.add_turtlebot(i)
+
+        self.num_of_agents = num_of_drones
+
+        simulation_origin_latitude = 47.3977419
+        simulation_origin_longitude = 8.5455935
+
+
 
     def is_goal_reached(self, id, goal,error_radius=0.1):# 10 cm default error radius, goal is a numpy array
         
@@ -70,11 +78,11 @@ class Swarm:
             return False
 
 
-    def formation_coordinates(self, radius, num_of_edges, height = 1):
+    def formation_coordinates(self, radius, num_of_edges, height = 1, starting = 0):
         vectors = np.zeros(shape=(num_of_edges,3)) # [id][0: for x, 1: for y, 2: for z]
 
-        vectors[0][0]=0
-        vectors[0][1]=radius
+        vectors[0][0]=starting
+        vectors[0][1]=radius + starting
         vectors[0][2]=height
 
         angle = (360/num_of_edges)*0.0174532925 #radians 
@@ -149,10 +157,10 @@ class Swarm:
         if self.vehicle == "Iris":
             self.agents[id].move_global(coordinates[id][0], coordinates[id][1], 5) # makes more stable
 
-    def form_via_potential_field(self, radius): # uses potential field algorithm to form
+    def form_via_potential_field(self, radius, starting=0): # uses potential field algorithm to form
         print(self.formation_coordinates(radius, self.num_of_agents))
 
-        coordinates = self.formation_coordinates(radius, self.num_of_agents)
+        coordinates = self.formation_coordinates(radius, self.num_of_agents, starting=starting)
         coordinates = self.sort_coordinates(coordinates)
         if self.vehicle == "Crazyflie":
             while not self.is_formed(coordinates):
@@ -171,10 +179,10 @@ class Swarm:
             self.stop_all()
             self.timeHelper.sleep(4)  
                   
-    def form_polygon(self, radius, num_of_edges): # uses potential field algorithm to form
+    def form_polygon(self, radius, num_of_edges, starting=0): # uses potential field algorithm to form
         
 
-        coordinates = self.sort_coordinates(self.formation_coordinates(radius, num_of_edges))
+        coordinates = self.sort_coordinates(self.formation_coordinates(radius, num_of_edges, starting))
 
         print(coordinates)
 
@@ -200,15 +208,26 @@ class Swarm:
                     
             self.stop_all()
             self.timeHelper.sleep(4)         
-
     
-    def form_via_pose(self, radius): # uses position commands to form but collisions may occur
-        coordinates = self.formation_coordinates(radius, self.num_of_agents)
+    def form_via_pose(self, radius, starting = 0): # uses position commands to form but collisions may occur
+        coordinates = self.formation_coordinates(radius, self.num_of_agents, starting)
         for i in range(len(self.agents)):
             Thread(target=self.agents[i].move_global, args=(coordinates[i][0], coordinates[i][1], 5)).start()
 
+    def split_formation(self):
+        swarm1 = Swarm(self.num_of_agents//2, self.vehicle, False, self.crazyswarm)
+        swarm1.agents = self.crazyswarm.allcfs.crazyflies[0 : self.num_of_agents//2]
+        swarm2 = Swarm(self.num_of_agents-self.num_of_agents//2, self.vehicle, False, self.crazyswarm)
+        swarm2.agents = self.crazyswarm.allcfs.crazyflies[self.num_of_agents//2 : ]
 
+        swarm1.go((-2,-2,1))
+        swarm2.go((2,2,1))
 
+        swarm1.form_polygon(3, 3, -2)
+        swarm2.form_polygon(3, 3, 2)
+
+        return swarm1, swarm2
+    
     def add_drone(self,id):
    
         self.agents.append(Iris(id))
