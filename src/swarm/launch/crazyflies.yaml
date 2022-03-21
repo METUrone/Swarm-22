@@ -23,3 +23,19 @@ crazyflies:
   id: 6
   initialPosition: [2.5, 2.5, 0.0]
   type: default
+- channel: 100
+  id: 7
+  initialPosition: [3, 3, 0.0]
+  type: default
+- channel: 100
+  id: 8
+  initialPosition: [3.5, 3.5, 0.0]
+  type: default
+- channel: 100
+  id: 9
+  initialPosition: [4, 4, 0.0]
+  type: default
+- channel: 100
+  id: 10
+  initialPosition: [4.5, 4.5, 0.0]
+  type: default
