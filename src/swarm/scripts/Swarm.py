@@ -93,7 +93,7 @@ class Swarm:
 
     def sort_coordinates(self, coordinates):
         sorted_coordinates = [[0, 0]]*self.num_of_agents
-        cost_matrix = [[math.sqrt((target[0] - drone.position()[0])**2 + (target[1] - drone.position()[1])**2) for target in coordinates] for drone in self.agents]
+        cost_matrix = [[math.sqrt((target[0] - drone.position()[0])**2 + (target[1] - drone.position()[1])**2 + (target[2] - drone.position()[2])**2) for target in coordinates] for drone in self.agents]
         
         assigner = Munkres()
         assigner.fit(cost_matrix)
@@ -126,12 +126,13 @@ class Swarm:
                 y_distance = self.agents[id].position()[1] - self.agents[i].position()[1]
                 x_distance = self.agents[id].position()[0] - self.agents[i].position()[0]
 
-                d = ((y_distance**2) + (x_distance**2))**(1/2)
+                d = ((y_distance**2) + (x_distance**2) + (z_distance**2))**(1/2)
 
-                if d < repulsive_threshold and y_distance != 0 and x_distance != 0:
+                if d < repulsive_threshold and y_distance != 0 and x_distance != 0 and z_distance != 0:
                     repulsive_force_z += (1/(z_distance**2))*(1/repulsive_threshold - 1/z_distance)*repulsive_constant
-                    repulsive_force_y += (1/(y_distance**2))*(1/repulsive_threshold - 1/y_distance)*repulsive_constant
-                    repulsive_force_x += (1/(x_distance**2))*(1/repulsive_threshold - 1/x_distance)*repulsive_constant
+                    if z_distance < 0.5:
+                        repulsive_force_y += (1/(y_distance**2))*(1/repulsive_threshold - 1/y_distance)*repulsive_constant
+                        repulsive_force_x += (1/(x_distance**2))*(1/repulsive_threshold - 1/x_distance)*repulsive_constant
 
         return min(max(float(repulsive_force_x),-1*speed_limit),speed_limit), min(max(float(repulsive_force_y),-1*speed_limit),speed_limit), min(max(float(repulsive_force_z),-1*speed_limit),speed_limit)
 
@@ -219,7 +220,7 @@ class Swarm:
         for i in range(len(self.agents)):
             Thread(target=self.agents[i].move_global, args=(coordinates[i][0], coordinates[i][1], 5)).start()
 
-    def form_3d(self, radius, num_edges):
+    def form_3d_split(self, radius, num_edges):
         if num_edges == "prism":
             swarm1 = Swarm(1, self.vehicle, False, self.crazyswarm)
             swarm1.agents = self.crazyswarm.allcfs.crazyflies[0 : 1]
@@ -228,7 +229,7 @@ class Swarm:
             swarm2.agents = self.crazyswarm.allcfs.crazyflies[1 : 5]
             swarm2.stop_all()
             swarm1.form_polygon(0, 1, 1.5)
-            swarm2.form_polygon(2, 4, 0.5)   
+            swarm2.form_polygon(2, 4, 0.5)
 
         elif num_edges == "cylinder": # Here circle function can be used.
             pass
@@ -243,6 +244,17 @@ class Swarm:
             #swarm2.go((0, 0, -0.5))
             swarm1.form_polygon(2, num_edges, 1.5)
             swarm2.form_polygon(2, num_edges, 0.5)
+
+    def form_3d(self, radius, num_edges):
+        if num_edges == "prism":
+            coordinates = self.sort_coordinates(np.concatenate((self.formation_coordinates(0, 1, height=1.5), self.formation_coordinates(radius, 4, height=0.5))))
+            self.form_coordinates(coordinates=coordinates)
+        elif num_edges == "cylinder": # Here circle function can be used.
+            pass
+        else:
+            coordinates = self.sort_coordinates(np.concatenate((self.formation_coordinates(radius=radius, num_of_edges=num_edges, height=1.5), self.formation_coordinates(radius, num_of_edges=num_edges, height=0.5))))
+            self.form_coordinates(coordinates=coordinates)
+
 
     def add_drone(self,id):
    
