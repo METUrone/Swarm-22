@@ -220,6 +220,22 @@ class Swarm:
         for i in range(len(self.agents)):
             Thread(target=self.agents[i].move_global, args=(coordinates[i][0], coordinates[i][1], 5)).start()
 
+    def split_formation(self):
+        swarm1 = Swarm(self.num_of_agents//2, self.vehicle, False, self.crazyswarm)
+        swarm1.agents = self.crazyswarm.allcfs.crazyflies[0 : self.num_of_agents//2]
+        swarm1.stop_all()
+        swarm2 = Swarm(self.num_of_agents-self.num_of_agents//2, self.vehicle, False, self.crazyswarm)
+        swarm2.agents = self.crazyswarm.allcfs.crazyflies[self.num_of_agents//2 : ]
+        swarm2.stop_all()
+
+        swarm1.go(vector=[-2,-2,0])
+        swarm2.go(vector=[2, 2, 0])
+
+        swarm1.form_polygon(2, self.num_of_agents//2, 1, [-2,-2,0])
+        swarm2.form_polygon(2, self.num_of_agents-self.num_of_agents//2, 1, [2,2,0])
+
+        return swarm1, swarm2
+
     def form_3d_split(self, radius, num_edges):
         if num_edges == "prism":
             swarm1 = Swarm(1, self.vehicle, False, self.crazyswarm)
