@@ -7,7 +7,6 @@ from nav_msgs.msg import Odometry
 from sensor_msgs.msg import NavSatFix
 from geometry_msgs.msg import TwistStamped
 
-from swarm.srv import PoseCommand, VelocityCommand
 
 from copy import deepcopy
 

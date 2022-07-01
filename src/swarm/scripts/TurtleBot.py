@@ -28,7 +28,7 @@ def euler_from_quaternion(x, y, z, w):
      
         return roll_x, pitch_y, yaw_z # in radians
 
-rospy.init_node("Turtle", anonymous=True)
+#rospy.init_node("Turtle", anonymous=True)
 
 
 class TurtleBot:
@@ -39,6 +39,7 @@ class TurtleBot:
         self.vel.angular.z = 0
 
         self.pose = Odometry()
+        rospy.init_node("Turtle", anonymous=True)
 
         self.vel_pub = rospy.Publisher("/tb3_{}/cmd_vel".format(id), Twist, queue_size=1)
         rospy.Subscriber("/tb3_{}/odom".format(self.id), Odometry,self.odometry_callback)
