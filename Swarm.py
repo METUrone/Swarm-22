@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from socket import timeout
 import numpy as np
 import math
 import time
@@ -336,13 +337,19 @@ class Swarm:
             self.agents[id].move_global(coordinates[id][0], coordinates[id][1], 5) # makes more stable
 
 
-    def form_via_potential_field(self, radius): # uses potential field algorithm to form
+    def form_via_potential_field(self, radius, timeout = 10): # uses potential field algorithm to form
         self.radius = radius
 
         coordinates = self.formation_coordinates(radius, self.num_of_agents)
         coordinates = self.sort_coordinates(coordinates)
         if self.vehicle == "Crazyflie" or self.vehicle == "TurtleBot":
+            before_starting = time.localtime()
+
             while not self.is_formed(coordinates):
+
+                if time.mktime(time.localtime()) - time.mktime(before_starting) > timeout:
+                    print("TIMEOUT!!!")
+                    break
 
                 reached = []
                 for i in range(len(self.agents)):
@@ -366,13 +373,19 @@ class Swarm:
             self.stop_all()
             self.timeHelper.sleep(4)  
                   
-    def form_polygon(self, distance_between, num_of_edges,height=1, displacement=np.array([0,0,0])): # uses potential field algorithm to form
+    def form_polygon(self, distance_between, num_of_edges,height=1, displacement=np.array([0,0,0]), timeout = 10): # uses potential field algorithm to form
         
         radius = distance_to_radius(distance_between,num_of_edges) # converts distance between agents to formation radius
         coordinates = self.sort_coordinates(self.formation_coordinates(radius, num_of_edges, height, displacement))
 
+        before_starting = time.localtime()
+
         if self.vehicle == "Crazyflie":
             while not self.is_formed(coordinates):
+
+                if time.mktime(time.localtime()) - time.mktime(before_starting) > timeout:
+                        print("TIMEOUT!!!")
+                        break
             #for i in range(4000):
                 for i in range(len(self.agents)):
                     
@@ -519,6 +532,14 @@ class Swarm:
         self.agents[len(self.agents)-1].land(0.03, 2)
         self.num_of_agents -= 1
         self.agents.pop()
+        self.timeHelper.sleep(1)
+        self.form_via_potential_field(self.radius)
+        self.timeHelper.sleep(2)
+
+    def omit_agent_by_id(self, id):
+        self.agents[id].land(0.03, 2)
+        self.num_of_agents -= 1
+        del self.agents[id]
         self.timeHelper.sleep(1)
         self.form_via_potential_field(self.radius)
         self.timeHelper.sleep(2)
