@@ -261,19 +261,12 @@ class Swarm:
                         repulsive_force_x += (1/(x_distance**2))*(1/repulsive_threshold - 1/x_distance)*repulsive_constant * (-(x_distance) / abs(x_distance))
 
         for obstacle in self.obstacles:
-                if i == id:
-                    continue
-                z_distance = self.agents[id].position()[2] - obstacle.position()[2]
                 y_distance = self.agents[id].position()[1] - obstacle.position()[1]
                 x_distance = self.agents[id].position()[0] - obstacle.position()[0]
 
-                z_distance = (z_distance - self.obstacles[obstacle]) if (z_distance > 0 )else (z_distance + self.obstacles[obstacle])
                 y_distance = (y_distance - self.obstacles[obstacle]) if (y_distance > 0 )else (y_distance + self.obstacles[obstacle])
                 x_distance = (x_distance - self.obstacles[obstacle]) if (x_distance > 0 )else (x_distance + self.obstacles[obstacle]) 
 
-            
-                if z_distance != 0 and abs(z_distance) < repulsive_threshold:
-                    repulsive_force_z += (1/(z_distance**2))*(1/repulsive_threshold - 1/abs(z_distance))*repulsive_constant * (-(z_distance) / abs(z_distance))
                 if y_distance != 0 and abs(y_distance) < repulsive_threshold:
                     repulsive_force_y += (1/(y_distance**2))*(1/repulsive_threshold - 1/abs(y_distance))*repulsive_constant * (-(y_distance) / abs(y_distance))
                 if x_distance != 0 and abs(x_distance) < repulsive_threshold:
@@ -288,7 +281,7 @@ class Swarm:
         #for _ in range(4000):
         #print("id: {}  pose: {}".format(id, self.agents[id].position()))
 
-        attractive_force_x, attractive_force_y, attractive_force_z = self.attractive_force(target_pose=coordinates[id], id=id, attractive_constant = 5)
+        attractive_force_x, attractive_force_y, attractive_force_z = self.attractive_force(target_pose=coordinates[id], id=id, attractive_constant = 5) # ???????????????????????????
         repulsive_force_x, repulsive_force_y, repulsive_force_z = self.repulsive_force(id=id)
 
         vel_x = attractive_force_x + repulsive_force_x
@@ -354,11 +347,12 @@ class Swarm:
                 reached = []
                 for i in range(len(self.agents)):
                     
+                    if i in reached: continue
+                    
                     if self.is_goal_reached(i,coordinates[i]):
                         reached.append(i)
                         self.agents[i].cmdVelocityWorld(np.array([0.0, 0.0, 0.0]), 0.0)
                         continue
-                    if i in reached: continue
 
                     self.single_potential_field(i, coordinates)   
             self.stop_all()                 

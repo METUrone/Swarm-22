@@ -67,10 +67,6 @@ class Munkres:
                 for i in range(len(cur_mat[row])):
                     if i not in cover_cols:
                         non_zero_element.append(cur_mat[row][i])
-        
-        if len(non_zero_element) == 0:
-            print(cur_mat)
-        
         min_num = min(non_zero_element)
     
         for row in range(len(cur_mat)):
