@@ -25,8 +25,8 @@ if __name__ == "__main__":
     
     
     clear_log()
-    uav_count = 5
-    radius = 1
+    uav_count = 6
+    radius = 2
     vehicle1 = "Iris"
     vehicle2 = "Crazyflie"
     swarm = Swarm(uav_count, vehicle2)
@@ -56,7 +56,6 @@ if __name__ == "__main__":
     #swarm.go(np.array([-radius,0,0]))
     #swarm.go(np.array([0,radius,0]))
     #swarm.rotate()
-    # swarm.hover(1.0)
 
     # for i in range(5):
     #     swarm.go(np.array([-0.1,0,0]))
@@ -88,7 +87,6 @@ if __name__ == "__main__":
     #swarm.omit_agent()
     #swarm.timeHelper.sleep(4)
     swarm.log_to_csv()
-    swarm.land()
     
     swarm.timeHelper.sleep(4)
     #swarm.return_starting_pose()

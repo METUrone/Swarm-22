@@ -72,6 +72,14 @@ class Swarm:
         simulation_origin_latitude = 47.3977419
         simulation_origin_longitude = 8.5455935
 
+    def hover(self,sleep_time:float):
+        now = self.timeHelper.time()
+        while (self.timeHelper.time()-now) < sleep_time:
+            # print(self.timeHelper.time())
+            self.timeHelper.sleep(0.001)
+            for uav in self.agents:
+                uav.cmdVelocityWorld(np.array([0.0, 0.0, 0.0]), 0.0)
+
     def form_3d(self, radius, num_edges, h=0.5):
         if num_edges == "prism":
 
