@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from socket import timeout
 import numpy as np
 import math
 import time
@@ -122,7 +123,7 @@ class Swarm:
 
         return angle if math.pi <=angle else -angle
 
-    def is_goal_reached(self, id, goal,error_radius=0.2):# 10 cm default error radius, goal is a numpy array
+    def is_goal_reached(self, id, goal,error_radius=0.15):# 15 cm default error radius, goal is a numpy array
         
         pose = self.agents[id].position()
 
@@ -146,19 +147,19 @@ class Swarm:
             return False
 
 
-    def formation_coordinates(self,radius, num_of_edges, height = 1, displacement=np.array([0,0,0]) ,rotation_angle=0):
+    def formation_coordinates(self,distance_between, num_of_edges, height = 1, displacement=np.array([0,0,0]) ,rotation_angle=0):
         vectors = np.zeros(shape=(num_of_edges,3)) # [id][0: for x, 1: for y, 2: for z]
         self.num_of_edges = num_of_edges
-
+        radius = distance_to_radius(distance_between, num_of_edges)
         vectors[0][0]=radius
         vectors[0][1]=0
         vectors[0][2]=height
 
-        angle = (360/num_of_edges)*0.0174532925 #radians 
+        angle = degree_to_radian(360/num_of_edges)
         agent_angle = 0
 
         for i in range(num_of_edges):
-            agent_angle = i*angle + rotation_angle*0.0174532925
+            agent_angle = i*angle + degree_to_radian(rotation_angle)
             vectors[i][0] = math.floor((radius*math.cos(agent_angle) + displacement[0]) * 1000)/ 1000
             vectors[i][1] = math.floor((radius*math.sin(agent_angle) + displacement[1]) * 1000)/ 1000
             vectors[i][2] = math.floor((height + displacement[2]) * 1000)/ 1000
@@ -336,13 +337,19 @@ class Swarm:
             self.agents[id].move_global(coordinates[id][0], coordinates[id][1], 5) # makes more stable
 
 
-    def form_via_potential_field(self, radius): # uses potential field algorithm to form
+    def form_via_potential_field(self, radius, timeout = 10): # uses potential field algorithm to form
         self.radius = radius
 
         coordinates = self.formation_coordinates(radius, self.num_of_agents)
         coordinates = self.sort_coordinates(coordinates)
         if self.vehicle == "Crazyflie" or self.vehicle == "TurtleBot":
+            before_starting = time.localtime()
+
             while not self.is_formed(coordinates):
+
+                if time.mktime(time.localtime()) - time.mktime(before_starting) > timeout:
+                    print("TIMEOUT!!!")
+                    break
 
                 reached = []
                 for i in range(len(self.agents)):
@@ -366,13 +373,19 @@ class Swarm:
             self.stop_all()
             self.timeHelper.sleep(4)  
                   
-    def form_polygon(self, radius, num_of_edges,height=1, displacement=np.array([0,0,0])): # uses potential field algorithm to form
+    def form_polygon(self, distance_between, num_of_edges,height=1, displacement=np.array([0,0,0]), timeout = 10): # uses potential field algorithm to form
         
-
+        radius = distance_to_radius(distance_between,num_of_edges) # converts distance between agents to formation radius
         coordinates = self.sort_coordinates(self.formation_coordinates(radius, num_of_edges, height, displacement))
+
+        before_starting = time.localtime()
 
         if self.vehicle == "Crazyflie":
             while not self.is_formed(coordinates):
+
+                if time.mktime(time.localtime()) - time.mktime(before_starting) > timeout:
+                        print("TIMEOUT!!!")
+                        break
             #for i in range(4000):
                 for i in range(len(self.agents)):
                     
@@ -392,7 +405,7 @@ class Swarm:
                     self.single_potential_field(i, coordinates)
                     
             self.stop_all()
-            self.timeHelper.sleep(4)         
+                  
     
     def form_via_pose(self, radius): # uses position commands to form but collisions may occur
         coordinates = self.formation_coordinates(radius, self.num_of_agents)
@@ -523,6 +536,14 @@ class Swarm:
         self.form_via_potential_field(self.radius)
         self.timeHelper.sleep(2)
 
+    def omit_agent_by_id(self, id):
+        self.agents[id].land(0.03, 2)
+        self.num_of_agents -= 1
+        del self.agents[id]
+        self.timeHelper.sleep(1)
+        self.form_via_potential_field(self.radius)
+        self.timeHelper.sleep(2)
+
     def go(self, vector):
         coordinates = np.zeros(shape=(len(self.agents),3))
 
@@ -579,10 +600,14 @@ class Swarm:
 
         self.form_coordinates(coordinates)
 
-    def rotate(self):
+    def rotate(self, degree, step= 10, duration = 3):
         
-        coordinates = self.formation_coordinates(2,5,1,np.array([0,0,0]),70)
-        print(coordinates)
-        coordinates = self.sort_coordinates(coordinates)
-        self.form_coordinates(coordinates)
-        self.timeHelper.sleep(1)
+        current_coordinates = []
+        for agent in self.agents:
+            current_coordinates.append(agent.position())
+
+        for i in range(step):
+            rotated_coordinates = rotate_coordinates(current_coordinates, degree/step*i)
+            self.timeHelper.sleep(duration/step)
+            self.form_coordinates(rotated_coordinates)
+        
