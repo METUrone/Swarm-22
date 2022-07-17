@@ -179,7 +179,7 @@ class Swarm:
 
         return sorted_coordinates
 
-    def attractive_force(self, id, target_pose, attractive_constant = 2):
+    def attractive_force(self, id, target_pose, attractive_constant = 0.2):
         speed_limit = 0.9 # must be float
 
         attractive_force_x = (target_pose[0] - self.agents[id].position()[0])*attractive_constant
@@ -286,7 +286,8 @@ class Swarm:
 
         vel_x = attractive_force_x + repulsive_force_x
         vel_y = attractive_force_y + repulsive_force_y
-        vel_z = attractive_force_z + repulsive_force_z
+        #vel_z = attractive_force_z + repulsive_force_z
+        vel_z = 1.0*(coordinates[id][2] - self.agents[id].position()[2])
 
         turtleBot_constant = 0.1
         rotational_constant = 0.3
@@ -294,7 +295,7 @@ class Swarm:
         if self.vehicle == "Crazyflie":
             self.agents[id].cmdVelocityWorld(np.array([vel_x, vel_y, vel_z]), yawRate=0)
             self.timeHelper.sleep(0.001)
-            self.add_log("{}, {}, {}, ".format(vel_x, vel_y, 0), datetime.now(),"{}, {}, {}, ".format(self.agents[id].position()[0],self.agents[id].position()[1],self.agents[id].position()[2]),id)
+            self.add_log("{}, {}, {}, ".format(vel_x, vel_y, vel_z), datetime.now(),"{}, {}, {}, ".format(self.agents[id].position()[0],self.agents[id].position()[1],self.agents[id].position()[2]),id)
 
         elif self.vehicle == "TurtleBot": 
             
@@ -320,12 +321,12 @@ class Swarm:
         vel_y = attractive_force_y + repulsive_force_y
         if self.vehicle == "Crazyflie":
             self.agents[id].cmdVelocityWorld(np.array([vel_x, vel_y, 0]), yawRate=0)
-            self.timeHelper.sleep(0.001)
+            #self.hover(0.001)
             self.add_log("{}, {}, {}, ".format(vel_x, vel_y, 0), datetime.now(),"{}, {}, {}, ".format(self.agents[id].position()[0],self.agents[id].position()[1],self.agents[id].position()[2]),id)
         else:           
             self.agents[id].velocity_command(linear_x=vel_x, linear_y=vel_y)
 
-            time.sleep(0.001)
+            #time.sleep(0.001)
         if self.vehicle == "Iris":
             self.agents[id].move_global(coordinates[id][0], coordinates[id][1], 5) # makes more stable
 
@@ -335,6 +336,7 @@ class Swarm:
 
         coordinates = self.formation_coordinates(radius, self.num_of_agents)
         coordinates = self.sort_coordinates(coordinates)
+        reached = []
         if self.vehicle == "Crazyflie" or self.vehicle == "TurtleBot":
             before_starting = time.localtime()
 
@@ -365,7 +367,7 @@ class Swarm:
                     print("call")
 
             self.stop_all()
-            self.timeHelper.sleep(4)  
+            self.hover(4)  
                   
     def form_polygon(self, distance_between, num_of_edges,height=1, displacement=np.array([0,0,0]), timeout = 10): # uses potential field algorithm to form
         
@@ -386,7 +388,7 @@ class Swarm:
                     self.single_potential_field( i, coordinates)
                     
             self.stop_all()
-            self.timeHelper.sleep(4)           
+            self.hover(4)           
 
     def form_coordinates(self, coordinates): # uses potential field algorithm to form
         coordinates = self.sort_coordinates(coordinates)
@@ -399,7 +401,7 @@ class Swarm:
                     self.single_potential_field(i, coordinates)
                     
             self.stop_all()
-                  
+            self.hover(1)         
     
     def form_via_pose(self, radius): # uses position commands to form but collisions may occur
         coordinates = self.formation_coordinates(radius, self.num_of_agents)
@@ -497,13 +499,21 @@ class Swarm:
             print("TURTLES CAN NOT FLY !!!")
             return
         elif self.vehicle == "Crazyflie":
-            self.agents[id].takeoff(targetHeight=height, duration=1)
+            self.agents[id].takeoff(targetHeight=height, duration=2)
         
+    def hover(self,sleep_time:float):
+        now = self.timeHelper.time()
+        while (self.timeHelper.time()-now) < sleep_time:
+            # print(self.timeHelper.time())
+            self.timeHelper.sleep(0.001)
+            for uav in self.agents:
+                uav.cmdVelocityWorld(np.array([0.0, 0.0, 0.0]), 0.0)
 
     def land(self):
         if self.vehicle == "Crazyflie":
             for i in range(len(self.agents)):
-                self.agents[i].land(0.03, 2)
+                self.agents[i].cmdVelocityWorld(np.array([0.0, 0.0, 0.0]), 0.0)
+                self.agents[i].land(0.1, 5)
 
     def stop_all(self):
         if self.vehicle == "Iris" or self.vehicle == "TurtleBot":
@@ -518,17 +528,17 @@ class Swarm:
         self.num_of_agents += 1
 
         self.takeoff(len(self.agents)-1)
-        self.timeHelper.sleep(1)
+        self.hover(1)
         self.form_polygon(self.radius, len(self.agents))
-        self.timeHelper.sleep(2)
+        self.hover(2)
 
     def omit_agent(self):
-        self.agents[len(self.agents)-1].land(0.03, 2)
+        self.agents[len(self.agents)-1].land(0.1, 5)
         self.num_of_agents -= 1
         self.agents.pop()
-        self.timeHelper.sleep(1)
+        self.hover(1)
         self.form_via_potential_field(self.radius)
-        self.timeHelper.sleep(2)
+        self.hover(2)
 
     def omit_agent_by_id(self, id):
         self.agents[id].land(0.03, 2)
@@ -584,7 +594,7 @@ class Swarm:
             pentagons.append(i)
 
         self.form_coordinates(pentagons)
-        self.timeHelper.sleep(2)
+        self.hover(2)
 
     def form_pyramid(self):
         coordinates = self.formation_coordinates(self.radius, 4)
