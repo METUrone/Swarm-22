@@ -14,9 +14,15 @@ import random
 from TurtleBot import TurtleBot
 from pycrazyswarm import Crazyswarm
 from utils import *
+from geometry_msgs.msg import PoseStamped
+import copy
+import rospy
 
 class Swarm:
     def __init__(self,num_of_drones,vehicle, first_time = True, crazyswarm_class=None):
+
+        rospy.init_node("swarm", anonymous=True)
+
         self.agents = []
         self.vehicle = vehicle
         self.radius = 2
@@ -66,14 +72,18 @@ class Swarm:
         simulation_origin_latitude = 47.3977419
         simulation_origin_longitude = 8.5455935
 
-    def form_3d(self, radius, num_edges):
+    def form_3d(self, radius, num_edges, h=0.5):
         if num_edges == "prism":
-            coordinates = self.sort_coordinates(np.concatenate((self.formation_coordinates(0, 1, height=1.5), self.formation_coordinates(radius, 4, height=0.5))))
+
+            coordinates = self.sort_coordinates(np.concatenate((self.formation_coordinates(0, 1, height=radius+h), self.formation_coordinates(radius, len(self.agents)-1, height=h))))
+            print(coordinates)
             self.form_coordinates(coordinates=coordinates)
+            
         elif num_edges == "cylinder": # Here circle function can be used.
             pass
         else:
-            coordinates = self.sort_coordinates(np.concatenate((self.formation_coordinates(radius=radius, num_of_edges=num_edges, height=1.5), self.formation_coordinates(radius, num_of_edges=num_edges, height=0.5))))
+            coordinates = self.sort_coordinates(np.concatenate((self.formation_coordinates(distance_between=radius, num_of_edges=num_edges, height=1.5), self.formation_coordinates(radius, num_of_edges=num_edges, height=0.5))))
+            print(coordinates)
             self.form_coordinates(coordinates=coordinates)
 
     def log_to_csv(self):
@@ -127,6 +137,7 @@ class Swarm:
         
         pose = self.agents[id].position()
 
+
         distance =( (pose[0]-goal[0])**2 + (pose[1]-goal[1])**2 + (pose[2]-goal[2])**2 )**(1/2)
         if distance <= error_radius:
             return True
@@ -179,7 +190,7 @@ class Swarm:
 
         return sorted_coordinates
 
-    def attractive_force(self, id, target_pose, attractive_constant = 0.2):
+    def attractive_force(self, id, target_pose, attractive_constant = 2):
         speed_limit = 0.9 # must be float
 
         attractive_force_x = (target_pose[0] - self.agents[id].position()[0])*attractive_constant
@@ -261,12 +272,19 @@ class Swarm:
                         repulsive_force_x += (1/(x_distance**2))*(1/repulsive_threshold - 1/x_distance)*repulsive_constant * (-(x_distance) / abs(x_distance))
 
         for obstacle in self.obstacles:
+                if i == id:
+                    continue
+                z_distance = self.agents[id].position()[2] - obstacle.position()[2]
                 y_distance = self.agents[id].position()[1] - obstacle.position()[1]
                 x_distance = self.agents[id].position()[0] - obstacle.position()[0]
 
+                z_distance = (z_distance - self.obstacles[obstacle]) if (z_distance > 0 )else (z_distance + self.obstacles[obstacle])
                 y_distance = (y_distance - self.obstacles[obstacle]) if (y_distance > 0 )else (y_distance + self.obstacles[obstacle])
                 x_distance = (x_distance - self.obstacles[obstacle]) if (x_distance > 0 )else (x_distance + self.obstacles[obstacle]) 
 
+            
+                if z_distance != 0 and abs(z_distance) < repulsive_threshold:
+                    repulsive_force_z += (1/(z_distance**2))*(1/repulsive_threshold - 1/abs(z_distance))*repulsive_constant * (-(z_distance) / abs(z_distance))
                 if y_distance != 0 and abs(y_distance) < repulsive_threshold:
                     repulsive_force_y += (1/(y_distance**2))*(1/repulsive_threshold - 1/abs(y_distance))*repulsive_constant * (-(y_distance) / abs(y_distance))
                 if x_distance != 0 and abs(x_distance) < repulsive_threshold:
@@ -281,13 +299,12 @@ class Swarm:
         #for _ in range(4000):
         #print("id: {}  pose: {}".format(id, self.agents[id].position()))
 
-        attractive_force_x, attractive_force_y, attractive_force_z = self.attractive_force(target_pose=coordinates[id], id=id, attractive_constant = 5) # ???????????????????????????
+        attractive_force_x, attractive_force_y, attractive_force_z = self.attractive_force(target_pose=coordinates[id], id=id, attractive_constant = 5)
         repulsive_force_x, repulsive_force_y, repulsive_force_z = self.repulsive_force(id=id)
 
         vel_x = attractive_force_x + repulsive_force_x
         vel_y = attractive_force_y + repulsive_force_y
-        #vel_z = attractive_force_z + repulsive_force_z
-        vel_z = 1.0*(coordinates[id][2] - self.agents[id].position()[2])
+        vel_z = attractive_force_z + repulsive_force_z
 
         turtleBot_constant = 0.1
         rotational_constant = 0.3
@@ -295,7 +312,7 @@ class Swarm:
         if self.vehicle == "Crazyflie":
             self.agents[id].cmdVelocityWorld(np.array([vel_x, vel_y, vel_z]), yawRate=0)
             self.timeHelper.sleep(0.001)
-            self.add_log("{}, {}, {}, ".format(vel_x, vel_y, vel_z), datetime.now(),"{}, {}, {}, ".format(self.agents[id].position()[0],self.agents[id].position()[1],self.agents[id].position()[2]),id)
+            self.add_log("{}, {}, {}, ".format(vel_x, vel_y, 0), datetime.now(),"{}, {}, {}, ".format(self.agents[id].position()[0],self.agents[id].position()[1],self.agents[id].position()[2]),id)
 
         elif self.vehicle == "TurtleBot": 
             
@@ -321,12 +338,12 @@ class Swarm:
         vel_y = attractive_force_y + repulsive_force_y
         if self.vehicle == "Crazyflie":
             self.agents[id].cmdVelocityWorld(np.array([vel_x, vel_y, 0]), yawRate=0)
-            #self.hover(0.001)
+            self.timeHelper.sleep(0.001)
             self.add_log("{}, {}, {}, ".format(vel_x, vel_y, 0), datetime.now(),"{}, {}, {}, ".format(self.agents[id].position()[0],self.agents[id].position()[1],self.agents[id].position()[2]),id)
         else:           
             self.agents[id].velocity_command(linear_x=vel_x, linear_y=vel_y)
 
-            #time.sleep(0.001)
+            time.sleep(0.001)
         if self.vehicle == "Iris":
             self.agents[id].move_global(coordinates[id][0], coordinates[id][1], 5) # makes more stable
 
@@ -336,11 +353,11 @@ class Swarm:
 
         coordinates = self.formation_coordinates(radius, self.num_of_agents)
         coordinates = self.sort_coordinates(coordinates)
-        reached = []
         if self.vehicle == "Crazyflie" or self.vehicle == "TurtleBot":
             before_starting = time.localtime()
 
             while not self.is_formed(coordinates):
+                self.cargo_opponent_simulation()
 
                 if time.mktime(time.localtime()) - time.mktime(before_starting) > timeout:
                     print("TIMEOUT!!!")
@@ -349,12 +366,11 @@ class Swarm:
                 reached = []
                 for i in range(len(self.agents)):
                     
-                    if i in reached: continue
-                    
                     if self.is_goal_reached(i,coordinates[i]):
                         reached.append(i)
                         self.agents[i].cmdVelocityWorld(np.array([0.0, 0.0, 0.0]), 0.0)
                         continue
+                    if i in reached: continue
 
                     self.single_potential_field(i, coordinates)   
             self.stop_all()                 
@@ -367,7 +383,7 @@ class Swarm:
                     print("call")
 
             self.stop_all()
-            self.hover(4)  
+            self.timeHelper.sleep(4)  
                   
     def form_polygon(self, distance_between, num_of_edges,height=1, displacement=np.array([0,0,0]), timeout = 10): # uses potential field algorithm to form
         
@@ -388,20 +404,26 @@ class Swarm:
                     self.single_potential_field( i, coordinates)
                     
             self.stop_all()
-            self.hover(4)           
+            self.timeHelper.sleep(4)           
 
-    def form_coordinates(self, coordinates): # uses potential field algorithm to form
+    def form_coordinates(self, coordinates, timeout = 10): # uses potential field algorithm to form
         coordinates = self.sort_coordinates(coordinates)
 
         if self.vehicle == "Crazyflie":
+            before_starting = time.localtime()
+
             while not self.is_formed(coordinates):
+
+                if time.mktime(time.localtime()) - time.mktime(before_starting) > timeout:
+                        print("TIMEOUT!!!")
+                        break
 
                 for i in range(len(self.agents)):
                     
                     self.single_potential_field(i, coordinates)
                     
             self.stop_all()
-            self.hover(1)         
+                  
     
     def form_via_pose(self, radius): # uses position commands to form but collisions may occur
         coordinates = self.formation_coordinates(radius, self.num_of_agents)
@@ -499,21 +521,13 @@ class Swarm:
             print("TURTLES CAN NOT FLY !!!")
             return
         elif self.vehicle == "Crazyflie":
-            self.agents[id].takeoff(targetHeight=height, duration=2)
+            self.agents[id].takeoff(targetHeight=height, duration=1)
         
-    def hover(self,sleep_time:float):
-        now = self.timeHelper.time()
-        while (self.timeHelper.time()-now) < sleep_time:
-            # print(self.timeHelper.time())
-            self.timeHelper.sleep(0.001)
-            for uav in self.agents:
-                uav.cmdVelocityWorld(np.array([0.0, 0.0, 0.0]), 0.0)
 
     def land(self):
         if self.vehicle == "Crazyflie":
             for i in range(len(self.agents)):
-                self.agents[i].cmdVelocityWorld(np.array([0.0, 0.0, 0.0]), 0.0)
-                self.agents[i].land(0.1, 5)
+                self.agents[i].land(0.03, 2)
 
     def stop_all(self):
         if self.vehicle == "Iris" or self.vehicle == "TurtleBot":
@@ -528,17 +542,17 @@ class Swarm:
         self.num_of_agents += 1
 
         self.takeoff(len(self.agents)-1)
-        self.hover(1)
+        self.timeHelper.sleep(1)
         self.form_polygon(self.radius, len(self.agents))
-        self.hover(2)
+        self.timeHelper.sleep(2)
 
     def omit_agent(self):
-        self.agents[len(self.agents)-1].land(0.1, 5)
+        self.agents[len(self.agents)-1].land(0.03, 2)
         self.num_of_agents -= 1
         self.agents.pop()
-        self.hover(1)
+        self.timeHelper.sleep(1)
         self.form_via_potential_field(self.radius)
-        self.hover(2)
+        self.timeHelper.sleep(2)
 
     def omit_agent_by_id(self, id):
         self.agents[id].land(0.03, 2)
@@ -565,24 +579,6 @@ class Swarm:
 
         self.form_coordinates(coordinates)
 
-    def circle(self, id, totalTime, radius, kPosition): ## DOES NOT WORK CURRENTLY
-        startTime = self.timeHelper.time()
-        pos = self.agents[id].position()
-        startPos = self.agents[id].initialPosition + np.array([0, 0, 1])
-        center_circle = startPos - np.array([radius, 0, 0])
-        while True:
-            time = self.timeHelper.time() - startTime
-            omega = 2 * np.pi / totalTime
-            vx = -radius * omega * np.sin(omega * time)  
-            vy = radius * omega * np.cos(omega * time)
-            desiredPos = center_circle + radius * np.array(
-                [np.cos(omega * time), np.sin(omega * time), 0])
-            errorX = desiredPos - self.agents[id].position() 
-            self.agents[id].cmdVelocityWorld(np.array([vx, vy, 0] + kPosition * errorX), yawRate=0)
-            self.timeHelper.sleepForRate(30)
-            if time >= totalTime:
-                return
-
     def star_formation(self, radius = 4, angle=0, height = 1):
         pentagon1 = self.formation_coordinates(radius,5,height,np.array([0,0,0]),angle)
         pentagon2 = self.formation_coordinates(radius/2,5,height,np.array([0,0,0]),36+angle)
@@ -594,7 +590,7 @@ class Swarm:
             pentagons.append(i)
 
         self.form_coordinates(pentagons)
-        self.hover(2)
+        self.timeHelper.sleep(2)
 
     def form_pyramid(self):
         coordinates = self.formation_coordinates(self.radius, 4)
@@ -614,4 +610,23 @@ class Swarm:
             rotated_coordinates = rotate_coordinates(current_coordinates, degree/step*i)
             self.timeHelper.sleep(duration/step)
             self.form_coordinates(rotated_coordinates)
+
+    
+# Publishes the location of agents to a ros topic in order to simulate opponent team in cargo mission.
+    def cargo_opponent_simulation(self): 
+        pose = PoseStamped()
+        poses = []
+        
+        # rospy.Publisher("cargo", PoseStamped[], )
+
+        for agent in self.agents:
+            agent_pose = agent.position()
+            pose.pose.position.x = agent_pose[0]
+            pose.pose.position.y = agent_pose[1]
+            pose.pose.position.z = agent_pose[2]
+
+            poses.append(copy.copy(pose))
+
+        print(poses)
+        print("-----------------")
         

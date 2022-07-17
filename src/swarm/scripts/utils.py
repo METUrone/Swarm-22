@@ -20,7 +20,11 @@ def angle_of_vector(x, y):
 
 # Input is distance between agents and output is the distance to the center of the formation. It uses cos theorem.
 def distance_to_radius(distance, number_of_edge):
-    return abs(distance**2/(2*(1 - math.cos(2*math.pi/number_of_edge))))**(0.5)
+    try:
+        d = abs(distance**2/(2*(1 - math.cos(2*math.pi/number_of_edge))))**(0.5)
+    except:
+        d = 0
+    return d 
 
 # Converst degree to radian
 def degree_to_radian(angle):
@@ -88,8 +92,8 @@ def rotate_coordinates(coordinates, angle):
     for coordinate in coordinates:
         coordinates_respect_to_center.append([coordinate[0]- center[0], coordinate[1]- center[1]])
 
-    for vector in coordinates_respect_to_center:
-        result.append(  [np.dot(rot, vector)[0] + center[0], np.dot(rot, vector)[1] + center[1], 1])    
+    for i in range(len(coordinates_respect_to_center)):
+        result.append(  [np.dot(rot, coordinates_respect_to_center[i])[0] + center[0], np.dot(rot, coordinates_respect_to_center[i])[1] + center[1], coordinates[i][2]])    
 
     return result
 
