@@ -7,4 +7,4 @@
 !.vscode/launch.json
 !.vscode/extensions.json
 src/swarm/scripts/agent*.csv
-
+src/swarm/scripts/__pycache__/*
