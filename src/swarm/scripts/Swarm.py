@@ -15,6 +15,9 @@ from TurtleBot import TurtleBot
 from pycrazyswarm import Crazyswarm
 from utils import *
 
+import rospy
+from custom_msg.msg import general_parameters #import custom_msg which is in the workspace
+
 class Swarm:
     def __init__(self,num_of_drones,vehicle, first_time = True, crazyswarm_class=None):
         self.agents = []
@@ -22,6 +25,8 @@ class Swarm:
         self.radius = 2
         self.num_of_edges = 3
         self.obstacles = {}
+        self.repulsive_pts = {}
+        self.isPublishing = False
 
         self.log = {
     
@@ -37,6 +42,7 @@ class Swarm:
             if first_time:
                 self.crazyswarm = Crazyswarm()
                 self.agents = self.crazyswarm.allcfs.crazyflies[0:num_of_drones]
+                self.agentsById = self.crazyswarm.allcfs.crazyfliesById
                 self.timeHelper = self.crazyswarm.timeHelper
 
                 for i in range(len(self.agents)):
@@ -123,7 +129,7 @@ class Swarm:
 
         return angle if math.pi <=angle else -angle
 
-    def is_goal_reached(self, id, goal,error_radius=0.15):# 15 cm default error radius, goal is a numpy array
+    def is_goal_reached(self, id, goal,error_radius=0.25):# 15 cm default error radius, goal is a numpy array
         
         pose = self.agents[id].position()
 
@@ -272,6 +278,20 @@ class Swarm:
                 if x_distance != 0 and abs(x_distance) < repulsive_threshold:
                     repulsive_force_x += (1/(x_distance**2))*(1/repulsive_threshold - 1/abs(x_distance))*repulsive_constant * (-(x_distance) / abs(x_distance))
 
+        for key in self.repulsive_pts:
+            z_distance = self.agents[id].position()[2] - self.repulsive_pts[key][2]
+            y_distance = self.agents[id].position()[1] - self.repulsive_pts[key][1]
+            x_distance = self.agents[id].position()[0] - self.repulsive_pts[key][0]
+            d = ((y_distance**2) + (x_distance**2) + (z_distance**2))**(1/2)
+
+            if d < repulsive_threshold:
+                if z_distance != 0:
+                    repulsive_force_z += (1/(z_distance**2))*(1/repulsive_threshold - 1/z_distance)*repulsive_constant * (-(z_distance) / abs(z_distance))
+                if y_distance != 0:
+                    repulsive_force_y += (1/(y_distance**2))*(1/repulsive_threshold - 1/y_distance)*repulsive_constant * (-(y_distance) / abs(y_distance))
+                if x_distance != 0:
+                    repulsive_force_x += (1/(x_distance**2))*(1/repulsive_threshold - 1/x_distance)*repulsive_constant * (-(x_distance) / abs(x_distance))
+
 
         return min(max(float(repulsive_force_x),-1*speed_limit),speed_limit), min(max(float(repulsive_force_y),-1*speed_limit),speed_limit), min(max(float(repulsive_force_z),-1*speed_limit),speed_limit)
 
@@ -331,16 +351,18 @@ class Swarm:
             self.agents[id].move_global(coordinates[id][0], coordinates[id][1], 5) # makes more stable
 
 
-    def form_via_potential_field(self, radius, timeout = 10): # uses potential field algorithm to form
+    def form_via_potential_field(self, radius, timeout = 10, displacement=(0,0,0)): # uses potential field algorithm to form
         self.radius = radius
 
-        coordinates = self.formation_coordinates(radius, self.num_of_agents)
+        coordinates = self.formation_coordinates(radius, self.num_of_agents,displacement=np.array(displacement))
         coordinates = self.sort_coordinates(coordinates)
         reached = []
         if self.vehicle == "Crazyflie" or self.vehicle == "TurtleBot":
             before_starting = time.localtime()
 
             while not self.is_formed(coordinates):
+                if self.isPublishing:
+                    self.pub_pose()
 
                 if time.mktime(time.localtime()) - time.mktime(before_starting) > timeout:
                     print("TIMEOUT!!!")
@@ -508,6 +530,8 @@ class Swarm:
             self.timeHelper.sleep(0.001)
             for uav in self.agents:
                 uav.cmdVelocityWorld(np.array([0.0, 0.0, 0.0]), 0.0)
+            if self.isPublishing:
+                self.pub_pose()
 
     def land(self):
         if self.vehicle == "Crazyflie":
@@ -614,4 +638,13 @@ class Swarm:
             rotated_coordinates = rotate_coordinates(current_coordinates, degree/step*i)
             self.timeHelper.sleep(duration/step)
             self.form_coordinates(rotated_coordinates)
-        
+    
+    def init_pose_pub(self):
+        self.pose_publishers = {id:rospy.Publisher(f"general_parameters/METUrone_{id:X}", general_parameters, queue_size=10) for id in self.agentsById}
+        self.isPublishing = True
+
+    def pub_pose(self):
+        for id in self.agentsById:
+            msg = general_parameters()
+            msg.pose.x,msg.pose.y,msg.pose.z = self.agentsById[id].position()
+            self.pose_publishers[id].publish(msg)

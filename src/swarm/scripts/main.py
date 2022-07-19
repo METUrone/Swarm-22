@@ -37,7 +37,7 @@ if __name__ == "__main__":
     swarm.form_3d(radius, "prism")
     #swarm.go(np.array([1,0,0]))
     swarm.rotate(120, step=20, duration=5)
-    swarm.land()
+    #swarm.land()
     # swarm.form_via_potential_field(radius)
     # swarm.timeHelper.sleep(1)
     # swarm.go([3, 3, 0])
