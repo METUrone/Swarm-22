@@ -25,7 +25,7 @@ if __name__ == "__main__":
     
     
     clear_log()
-    uav_count = 6
+    uav_count = 10
     radius = 2
     vehicle1 = "Iris"
     vehicle2 = "Crazyflie"
@@ -34,16 +34,16 @@ if __name__ == "__main__":
     swarm.timeHelper.sleep(5)
     print("take offf")
     
-    swarm.form_3d(radius, "prism")
-    #swarm.go(np.array([1,0,0]))
-    swarm.rotate(120, step=20, duration=5)
-    swarm.land()
-    # swarm.form_via_potential_field(radius)
-    # swarm.timeHelper.sleep(1)
-    # swarm.go([3, 3, 0])
-    # swarm.obstacle_creator(5)
-    # swarm.form_polygon(2, 5, 1, [-3, -3, 0])
-    # swarm.form_polygon(2, 5, 1, [3, 3, 0])
+    # swarm.form_3d(radius, "prism")
+    # #swarm.go(np.array([1,0,0]))
+    # swarm.rotate(120, step=20, duration=5)
+    # swarm.land()
+    swarm.form_via_potential_field(radius)
+    swarm.timeHelper.sleep(1)
+    swarm.go([3, 3, 0])
+    swarm.obstacle_creator(5)
+    swarm.form_polygon(2, 5, 1, [-3, -3, 0])
+    swarm.form_polygon(2, 5, 1, [3, 3, 0])
 
 
     # swarm.timeHelper.sleep(1)

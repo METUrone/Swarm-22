@@ -97,6 +97,35 @@ def rotate_coordinates(coordinates, angle):
 
     return result
 
+def write_mission(content):
+    content = str(content)
+    f = open("mission.txt", "a")
+    f.write(content)
+    f.write(" \n")
+    f.close()
+
+def clear_mission():
+    f = open("mission.txt", "w")
+    f.write("")
+    f.close()
+
+def read_mission():
+    mission = []
+    with open("mission.txt") as f:
+        lines = f.readlines()
+
+    for line in lines:
+        mission.append(line.split(" "))
+    return mission
+
+# mission = read_mission()
+
+# for _ in range(len(mission)):
+#     print(mission[0])
+#     del mission[0]
+
+# print(mission)
+
 # coordinates = formation_coordinates(1, 3, height = 1, displacement=np.array([0,0,0]) ,rotation_angle=0)
 
 # test = []

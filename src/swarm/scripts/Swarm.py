@@ -279,16 +279,16 @@ class Swarm:
                     if x_distance != 0:
                         repulsive_force_x += (1/(x_distance**2))*(1/repulsive_threshold - 1/x_distance)*repulsive_constant * (-(x_distance) / abs(x_distance))
 
-        for obstacle in self.obstacles:
+        for i in range(len(self.obstacles)):
                 if i == id:
                     continue
-                z_distance = self.agents[id].position()[2] - obstacle.position()[2]
-                y_distance = self.agents[id].position()[1] - obstacle.position()[1]
-                x_distance = self.agents[id].position()[0] - obstacle.position()[0]
+                z_distance = self.agents[id].position()[2] - self.obstacles[i][2]
+                y_distance = self.agents[id].position()[1] - self.obstacles[i][1]
+                x_distance = self.agents[id].position()[0] - self.obstacles[i][0]
 
-                z_distance = (z_distance - self.obstacles[obstacle]) if (z_distance > 0 )else (z_distance + self.obstacles[obstacle])
-                y_distance = (y_distance - self.obstacles[obstacle]) if (y_distance > 0 )else (y_distance + self.obstacles[obstacle])
-                x_distance = (x_distance - self.obstacles[obstacle]) if (x_distance > 0 )else (x_distance + self.obstacles[obstacle]) 
+                z_distance = (z_distance - self.obstacles[i]) if (z_distance > 0 )else (z_distance + self.obstacles[i])
+                y_distance = (y_distance - self.obstacles[i]) if (y_distance > 0 )else (y_distance + self.obstacles[i])
+                x_distance = (x_distance - self.obstacles[i]) if (x_distance > 0 )else (x_distance + self.obstacles[i]) 
 
             
                 if z_distance != 0 and abs(z_distance) < repulsive_threshold:
@@ -452,12 +452,21 @@ class Swarm:
     
         return swarm1, swarm2
 
-    def obstacle_creator(self, num_obstacles):
+    def obstacle_creator(self, num_obstacles, obstacle_radius):
         for i in range(num_obstacles):
-            self.obstacles[self.agents[i]] = 0.1
+            self.obstacles[i] = self.agents[i].position()
+            # self.obstacles[i].append(0.1)
+            np.append(self.obstacles[i], obstacle_radius)
         self.agents = self.agents[num_obstacles:self.num_of_agents]
         self.num_of_agents = self.num_of_agents-num_obstacles
     
+    def obstacle_creator_without_drones(self, array_of_obstacles, obstacle_radius = 0.1):
+        for i in range(len(array_of_obstacles)):
+            self.obstacles[i] = array_of_obstacles[i]
+            # self.obstacles[i].append(obstacle_radius)
+            np.append(self.obstacles[i], obstacle_radius)
+
+
     def add_drone(self,id):
    
         self.agents.append(Iris(id))
@@ -617,7 +626,7 @@ class Swarm:
         for i in range(step):
             rotated_coordinates = rotate_coordinates(current_coordinates, degree/step*i)
             self.timeHelper.sleep(duration/step)
-            self.form_coordinates(rotated_coordinates)
+            self.form_coordinates(rotated_coordinates, timeout=1)
 
     
 # Publishes the location of agents to a ros topic in order to simulate opponent team in cargo mission.
