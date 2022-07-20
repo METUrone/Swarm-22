@@ -17,22 +17,18 @@ def goto(goal, turtle):
     turtle.turn_to(angle)
 
     d = ((goal[0]-pose[0])**2 + (goal[1]-pose[1])**2)**0.5
-    d_error = 0.2
+    d_error = 0.5
     max_vel = 0.5
     vel = d
 
     vel = max(min(vel,max_vel), -max_vel)
-    linear_gain = 0.3
     print(vel)
     turtle.cmdVelocityWorld(np.array([0, 0, 0]), yawRate=0)
     while d > d_error:
         pose = turtle.position()
-        angle = angle_of_vector(goal[0]-pose[0],goal[1]-pose[1])
-        angular_vel = turtle.turn_to(angle, True) if turtle.turn_to(angle, True) else 0
-
         d = ((goal[0]-pose[0])**2 + (goal[1]-pose[1])**2)**0.5
         vel = max(min(vel,max_vel), -max_vel)
-        turtle.cmdVelocityWorld(np.array([vel* linear_gain , 0, 0]), yawRate=float(angular_vel))
+        turtle.cmdVelocityWorld(np.array([vel*0.3, 0, 0]), yawRate=0)
         """ print(d) """
     turtle.cmdVelocityWorld(np.array([0, 0, 0]), yawRate=0)
 
@@ -49,17 +45,13 @@ if __name__ == "__main__":
     turtle0 = TurtleBot(0)
     turtle1 = TurtleBot(1)
     turtle2 = TurtleBot(2)
-    agents = [turtle0, turtle1, turtle2]
 
-    center = center_of_agents(agents)
     goal0 = [1,1]
     goal1 = [2,2]
     goal2 = [0,2]
-    coordinates = formation_coordinates(radius, 3, height = 1, displacement=np.array([0,0,0]) ,rotation_angle=0)
-    
-    Thread(target = goto, args=(coordinates[0], turtle0)).start()
-    Thread(target = goto, args=(coordinates[1], turtle1)).start()
-    Thread(target = goto, args=(coordinates[2], turtle2)).start()
+    Thread(target = goto, args=(goal0, turtle0)).start()
+    Thread(target = goto, args=(goal1, turtle1)).start()
+    Thread(target = goto, args=(goal2, turtle2)).start()
     """ goto(goal0, turtle0)
     goto(goal1, turtle1)
     goto(goal2, turtle2) """

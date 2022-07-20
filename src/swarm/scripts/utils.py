@@ -1,6 +1,10 @@
 import math
+import csv
+import matplotlib.pyplot as plt
 import numpy as np
-import os
+from math import sin, cos
+
+from mpl_toolkits.mplot3d import Axes3D
 
 def angle_of_vector(x, y):
     angle = math.atan(abs(y)/abs(x))
@@ -14,88 +18,91 @@ def angle_of_vector(x, y):
     else:
         return 2*math.pi - angle
 
-def formation_coordinates(radius, num_of_edges, height = 1, displacement=np.array([0,0,0]) ,rotation_angle=0):
-        vectors = np.zeros(shape=(num_of_edges,3)) # [id][0: for x, 1: for y, 2: for z]
+# Input is distance between agents and output is the distance to the center of the formation. It uses cos theorem.
+def distance_to_radius(distance, number_of_edge):
+    try:
+        d = abs(distance**2/(2*(1 - math.cos(2*math.pi/number_of_edge))))**(0.5)
+    except:
+        d = 0
+    return d 
 
-        vectors[0][0]=radius
-        vectors[0][1]=0
-        vectors[0][2]=height
+# Converst degree to radian
+def degree_to_radian(angle):
+    return angle*0.0174532925 #radians 
 
-        angle = (360/num_of_edges)*0.0174532925 #radians 
+# Plots coordinates using matplotlib
+# Dimension parameter determines wether the plot is going to be 2 dimensional or 3
+def show_coordinates(coordinates, dimension=3):
 
-        for i in range(1,num_of_edges):
-            vectors[i][0] = radius*math.cos(i*angle + rotation_angle) + displacement[0]
-            vectors[i][1] = radius*math.sin(i*angle + rotation_angle) + displacement[1]
-            vectors[i][2] = height + displacement[2]
+    X = []
+    Y = []
+    Z = []
 
-        return vectors
+    for i in coordinates:
+        X.append(i[0])
+        Y.append(i[1])
+        Z.append(i[2])
 
-def center_of_agents(agents):
-    center = np.array([0, 0, 0])
-    num_of_agents = len(agents)
-    for i in agents:
-        for j in range(3):
-            center[j] += i.position()[j]
-    return center[0]/num_of_agents, center[1]/num_of_agents, center[2]/num_of_agents
+    if dimension == 3:
 
+        fig = plt.figure()
+        ax = fig.add_subplot(projection='3d')
+        ax.scatter(X,Y, Z)
 
-def clear_log():
-    for i in range(50):
-        try:
-            os.remove('./agent{}_logs.csv'.format(i))
-        except FileNotFoundError:
-            return
-    
-def delta_angle(x,y):
-    angle = math.atan(y/x)
-    if x < 0 and y >= 0:
-        angle =  angle + math.pi
-    elif x < 0 and y < 0:
-        angle =  angle + math.pi
-    else:
-        angle =  angle + math.pi
-    return angle if math.pi <=angle else -angle
+    elif dimension == 2:
 
-def formation_coordinates(radius, num_of_edges, height = 2, displacement=np.array([0,0,0]) ,rotation_angle=0):
+        plt.scatter(X,Y)
+        
+    plt.show()
+
+def formation_coordinates(distance_between, num_of_edges, height = 1, displacement=np.array([0,0,0]) ,rotation_angle=0):
     vectors = np.zeros(shape=(num_of_edges,3)) # [id][0: for x, 1: for y, 2: for z]
-
+    num_of_edges = num_of_edges
+    radius = distance_to_radius(distance_between, num_of_edges)
     vectors[0][0]=radius
     vectors[0][1]=0
     vectors[0][2]=height
 
-    angle = (360/num_of_edges)*0.0174532925 #radians 
+    angle = degree_to_radian(360/num_of_edges)
+    agent_angle = 0
 
-    for i in range(1,num_of_edges):
-
-        vectors[i][0] = radius*math.cos(i*angle + rotation_angle) + displacement[0]
-        vectors[i][1] = radius*math.sin(i*angle + rotation_angle) + displacement[1]
-        vectors[i][2] = height + displacement[2]
+    for i in range(num_of_edges):
+        agent_angle = i*angle + degree_to_radian(rotation_angle)
+        vectors[i][0] = math.floor((radius*math.cos(agent_angle) + displacement[0]) * 1000)/ 1000
+        vectors[i][1] = math.floor((radius*math.sin(agent_angle) + displacement[1]) * 1000)/ 1000
+        vectors[i][2] = math.floor((height + displacement[2]) * 1000)/ 1000
 
     return vectors
 
-def distance_to_pose(drone_a, lat_b, long_b): # in meters
+def rotate_coordinates(coordinates, angle):
+    angle = degree_to_radian(angle)
+    center = [0,0,0]
+    result = []
 
-    lat_a = drone_a.gps_pose_getter().latitude
-    x_distance = 111139 * (lat_a - lat_b)
-    long_a = drone_a.gps_pose_getter().longitude
-    R = 63678.137
+    rot = np.array([[cos(angle), -sin(angle)], [sin(angle), cos(angle)]])
 
-    dlat = lat_b * math.pi / 180 - lat_a * math.pi/180 
-    dlon = long_b * math.pi / 180 - long_a * math.pi/180 
-    a = math.sin(dlat/2) * math.sin(dlat/2) + math.cos(lat_a*math.pi / 180) * math.cos(lat_b * math.pi / 180) * math.sin(dlon/2) * math.sin(dlon/2)
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
-    d = R * c
-    abs_distance = d * 100
+    for coordinate in coordinates:
+        center[0] = center[0] + coordinate[0]
+        center[1] = center[1] + coordinate[1]
+    
+    center = [center[0]/len(coordinates), center[1]/len(coordinates)]
+    
+    coordinates_respect_to_center = []
 
-    y_distance = math.sqrt(abs_distance**2-x_distance**2)
+    for coordinate in coordinates:
+        coordinates_respect_to_center.append([coordinate[0]- center[0], coordinate[1]- center[1]])
 
-    x_coefficient = 1
-    y_coefficient = 1
+    for i in range(len(coordinates_respect_to_center)):
+        result.append(  [np.dot(rot, coordinates_respect_to_center[i])[0] + center[0], np.dot(rot, coordinates_respect_to_center[i])[1] + center[1], coordinates[i][2]])    
 
-    if(lat_a < lat_b):
-        x_coefficient = -1
-    if(long_a < long_b):
-        y_coefficient = -1
+    return result
 
-    return x_distance*x_coefficient, y_distance*y_coefficient, abs_distance
+# coordinates = formation_coordinates(1, 3, height = 1, displacement=np.array([0,0,0]) ,rotation_angle=0)
+
+# test = []
+
+# for i in range(36):
+
+#     test.append(rotate_coordinates(coordinates, i*10))
+# show_coordinates(test, dimension=2)
 

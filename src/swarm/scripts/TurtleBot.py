@@ -28,7 +28,7 @@ def euler_from_quaternion(x, y, z, w):
      
         return roll_x, pitch_y, yaw_z # in radians
 
-""" rospy.init_node("Turtle", anonymous=True) """
+#rospy.init_node("Turtle", anonymous=True)
 
 
 class TurtleBot:
@@ -39,6 +39,7 @@ class TurtleBot:
         self.vel.angular.z = 0
 
         self.pose = Odometry()
+        rospy.init_node("Turtle", anonymous=True)
 
         self.vel_pub = rospy.Publisher("/tb3_{}/cmd_vel".format(id), Twist, queue_size=1)
         rospy.Subscriber("/tb3_{}/odom".format(self.id), Odometry,self.odometry_callback)
@@ -70,25 +71,16 @@ class TurtleBot:
         yaw = euler_from_quaternion(self.pose.pose.pose.orientation.x, self.pose.pose.pose.orientation.y, self.pose.pose.pose.orientation.z, self.pose.pose.pose.orientation.w)[2]
         return yaw if yaw >= 0 else yaw + math.pi * 2
 
-    def turn_to(self, yaw, only_calculate=False): #when only calculate True it does not give velocity command but just returns it.
+    def turn_to(self, yaw):
         error = 0.2 / 57.2957795
         gain = 2
         curr_yaw = self.orientation()
 
-        begin_sec = rospy.Time.now()
-
         while abs(yaw - curr_yaw) > error:
-            if rospy.Time.now() - begin_sec > rospy.Duration(3):
-                print("Time Out !!!!!!!!")
-                return
             curr_yaw = self.orientation()
-            if not only_calculate:
-                self.cmdVelocityWorld(np.array([0, 0, 0]), gain*(yaw - curr_yaw))
-            else:
-                return gain*(yaw - curr_yaw)
+            self.cmdVelocityWorld(np.array([0, 0, 0]), gain*(yaw - curr_yaw))
 
-        if not only_calculate:
-            print("turned to: " + str(self.orientation() * 57.2957795))
+        print("turned to: " + str(self.orientation() * 57.2957795))
         self.cmdVelocityWorld(np.array([0, 0, 0]), 0)
 
 

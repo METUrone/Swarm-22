@@ -7,7 +7,7 @@ from nav_msgs.msg import Odometry
 from sensor_msgs.msg import NavSatFix
 from geometry_msgs.msg import TwistStamped
 
-from swarm.srv import PoseCommand, VelocityCommand
+#from swarm.srv import PoseCommand, VelocityCommand
 
 from copy import deepcopy
 
@@ -103,18 +103,6 @@ class Iris:
         except rospy.ServiceException as e:
             print("Velocity Service call failed: %s"%e)
 
-    def cmdVelocityWorld(self, linear, yawRate):
-
-        try:
-
-            rospy.wait_for_service("VelocityCommand{}".format(self.id))
-            client = rospy.ServiceProxy("VelocityCommand{}".format(self.id), VelocityCommand)
-
-            resp = client.call(linear[0], linear[1], linear[2], 0, 0, yawRate)
-            return resp
-
-        except rospy.ServiceException as e:
-            print("Velocity Service call failed: %s"%e)
 
     def draw_square(self, length):
         z = 5
@@ -128,9 +116,6 @@ class Iris:
         self.move_local(current_x + 0, current_y + length, z)
 
         self.move_local(current_x + 0, current_y + 0, z)
-
-    def sleep(self, time):
-        rospy.sleep(time)
 
     
 
