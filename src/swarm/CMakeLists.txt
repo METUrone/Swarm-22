@@ -8,6 +8,7 @@ project(swarm)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  roscpp
   rospy
   std_msgs
   message_generation
@@ -48,17 +49,17 @@ find_package(custom_msg)
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+add_message_files(
+  FILES
+  Pair.msg
+)
 
 ## Generate services in the 'srv' folder
 add_service_files(
   FILES
   PoseCommand.srv
   VelocityCommand.srv
+  AStarReq.srv
 )
 
 ## Generate actions in the 'action' folder
@@ -106,6 +107,7 @@ add_service_files(
 generate_messages(
   DEPENDENCIES
   std_msgs
+  swarm
 )
 
 catkin_package(
@@ -139,7 +141,8 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/swarm_node.cpp)
+add_executable(astar_handler src/astar.cpp)
+add_executable(astar_test src/astar_test.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -152,9 +155,12 @@ include_directories(
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(${PROJECT_NAME}_node
-#   ${catkin_LIBRARIES}
-# )
+target_link_libraries(astar_handler
+  ${catkin_LIBRARIES}
+)
+target_link_libraries(astar_test
+  ${catkin_LIBRARIES}
+)
 
 #############
 ## Install ##
