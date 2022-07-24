@@ -25,80 +25,19 @@ if __name__ == "__main__":
     
     
     clear_log()
-    uav_count = 10
+    uav_count = 6
     radius = 2
     vehicle1 = "Iris"
     vehicle2 = "Crazyflie"
     swarm = Swarm(uav_count, vehicle2)
-    #swarm.star_formation()
-    swarm.timeHelper.sleep(5)
-    print("take offf")
     
-    swarm.form_3d(radius, "prism")
-    #swarm.go(np.array([1,0,0]))
-    swarm.rotate(120, step=20, duration=5)
-    #swarm.land()
-    # swarm.form_via_potential_field(radius)
-    # swarm.timeHelper.sleep(1)
-    # swarm.go([3, 3, 0])
-    # swarm.obstacle_creator(5)
-    # swarm.form_polygon(2, 5, 1, [-3, -3, 0])
-    # swarm.form_polygon(2, 5, 1, [3, 3, 0])
-    # swarm.form_3d(radius, "prism")
-    # #swarm.go(np.array([1,0,0]))
-    # swarm.rotate(120, step=20, duration=5)
-    # swarm.land()
-    swarm.form_via_potential_field(radius)
-    swarm.timeHelper.sleep(1)
-    swarm.go([3, 3, 0])
-    swarm.obstacle_creator(5)
-    swarm.form_polygon(2, 5, 1, [-3, -3, 0])
-    swarm.form_polygon(2, 5, 1, [3, 3, 0])
+    swarm.takeoff(1)
+    swarm.form_3d(1, 3)
+    swarm.land_prism(1)
+    swarm.timeHelper.sleep(10)
 
-
-    # swarm.timeHelper.sleep(1)
-    # swarm.go([3, 3, 0])
-    # swarm.obstacle_creator(7)
-    # swarm.form_polygon(2, 3, 1, [-3, -3, 0])
-    # swarm.form_polygon(2, 3, 1, [3, 3, 0])
-    #swarm.go(np.array([radius,0,0]))
-    #swarm.go(np.array([0,-radius,0]))
-    #swarm.go(np.array([-radius,0,0]))
-    #swarm.go(np.array([0,radius,0]))
-    #swarm.rotate()
-
-    # for i in range(5):
-    #     swarm.go(np.array([-0.1,0,0]))
-
-    # swarm.hover(1.0)
-
-    
-    #swarm.form_3d(2, "prism")
-    #swarm.swarm_square(2)
-    #swarm.form_pyramid()
-    #swarm.add_agent_to_formation()
-
-    #swarm.hover(1.0)
-
-    #swarm.omit_agent()
-
-    #swarm.hover(1.0)
-    #swarm.timeHelper.sleep(2)
-
-    #for i in range(uav_count):
-    #    swarm.omit_agent()
-    
-    #swarm.swarm_square(2)
-    #swarm.rotate()
-
-    #swarm1, swarm2 = swarm.split_formation()
-    #swarm1.go(np.array([1,0,0]))
-    #swarm2.go(np.array([1,0,0]))
-    #swarm.omit_agent()
-    #swarm.timeHelper.sleep(4)
     swarm.log_to_csv()
     
     swarm.timeHelper.sleep(4)
-    #swarm.return_starting_pose()
-    #swarm.return_starting_pose()
+    
     

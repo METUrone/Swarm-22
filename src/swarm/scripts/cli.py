@@ -12,6 +12,7 @@ formasyondan 0. ajan çikarsa sim duruyo ama log devam ediyo ?
 from Swarm import Swarm 
 from TurtleBot import TurtleBot
 from utils import *
+from cargo import cargo_mission
 import numpy as np
 import os
 
@@ -35,22 +36,14 @@ if __name__ == "__main__":
 
     if mod == 1:
         clear_mission()
-        uav_count = int(input("Enter UAV number: "))
-        write_mission(uav_count)
 
     elif mod == 2:
         mission = read_mission()
-        uav_count = int(mission[0][0])
-        del mission[0]
 
     distance_between_agents = 3
     vehicle1 = "Iris"
     vehicle2 = "Crazyflie"
-    swarm = Swarm(uav_count, vehicle2)
 
-    
-
-        
 
     mission_numbers = """
     1) 3D fromation
@@ -81,6 +74,17 @@ if __name__ == "__main__":
         4: GO
         5: ROTATE
         """
+
+        if mod == 1:
+            uav_count = int(input("Enter UAV number: "))
+            write_mission(uav_count)
+
+        elif mod == 2:
+            uav_count = int(mission[0][0])
+            del mission[0]
+
+        swarm = Swarm(uav_count, vehicle2)
+        
 
         while is_mission_running:
             
@@ -123,7 +127,9 @@ if __name__ == "__main__":
                 swarm.form_3d(d, edge)
 
             elif sub_mission == 3:
-                swarm.land()
+                # swarm.land_prism(d)
+                swarm.form_via_potential_field(1)
+                swarm.land_swarm()
                 swarm.timeHelper.sleep(3)
                 is_mission_running = False
             
@@ -156,6 +162,16 @@ if __name__ == "__main__":
 
 
     elif mission_num == 2:
+
+        if mod == 1:
+            uav_count = int(input("Enter UAV number: "))
+            write_mission(uav_count)
+
+        elif mod == 2:
+            uav_count = int(mission[0][0])
+            del mission[0]
+
+        swarm = Swarm(uav_count, vehicle2)
 
         if mod == 1:
             d = float(input("Enter distance between agents:"))
@@ -240,6 +256,17 @@ if __name__ == "__main__":
                 print("INVALID ARGUMENT!!!")
     
     elif mission_num == 3:
+
+        if mod == 1:
+            uav_count = int(input("Enter UAV number: "))
+            write_mission(uav_count)
+
+        elif mod == 2:
+            uav_count = int(mission[0][0])
+            del mission[0]
+
+        swarm = Swarm(uav_count, vehicle2)
+
         sub_missions = """
         1: Add obstacle
         2: Remove last obstacle
@@ -282,7 +309,7 @@ if __name__ == "__main__":
                 swarm.go(vector)
 
     elif mission_num == 4:
-        pass
+        cargo_mission()
     elif mission_num == 5:
         pass
 

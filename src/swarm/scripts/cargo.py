@@ -4,6 +4,8 @@ from Swarm import Swarm
 
 from custom_msg.msg import general_parameters #import custom_msg which is in the workspace
 
+opponent_poses = {"C5":[-1.5,-1.8,1],"C6":[-1.5,-1,1],"C7":[-1.0,-1.3,1]}
+
 def opponent_listener_callback(data):
     """
     string_1 = "\nTeam Name: " + str(data.team_name) +"\nUav Name: "+  str(data.uav_name) 
@@ -12,9 +14,11 @@ def opponent_listener_callback(data):
     string_data = string_1 + string_2 + string_3
     rospy.loginfo(rospy.get_caller_id() + " I heard %s", string_data)
     """
+    global opponent_poses
     opponent_poses[str(data.uav_name)] = [data.pose.x,data.pose.y,data.pose.z]
 
 def opponent_center():
+    global opponent_poses
     x,y,z = 0,0,0
     for id in opponent_poses:
         x += opponent_poses[id][0]
@@ -25,11 +29,12 @@ def opponent_center():
 def check_right():
     return opponent_center()[1] > 0.1
 
-if __name__ == "__main__":
+def cargo_mission():
     opponent_team_name = "team_" # dont forget _ at the end
-    opponent_poses = {"C5":[-1.5,-1.8,1],"C6":[-1.5,-1,1],"C7":[-1.0,-1.3,1]}
+    global opponent_poses
+    
 
-    rospy.init_node('rosapi', anonymous=True)
+    # rospy.init_node('rosapi', anonymous=True)
     for id in opponent_poses:
         rospy.Subscriber("/general_parameters/" + opponent_team_name + id, general_parameters, opponent_listener_callback)
         print(id)
@@ -68,3 +73,6 @@ if __name__ == "__main__":
     swarm.land()
 
     swarm.timeHelper.sleep(4)
+
+if __name__ == "__main__":
+    cargo_mission()

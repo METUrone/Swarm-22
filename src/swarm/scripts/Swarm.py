@@ -193,7 +193,7 @@ class Swarm:
 
     def sort_coordinates(self, coordinates):
         sorted_coordinates = [[0, 0]]*self.num_of_agents
-        cost_matrix = [[math.sqrt((target[0] - drone.position()[0])**2 + (target[1] - drone.position()[1])**2) for target in coordinates] for drone in self.agents]
+        cost_matrix = [[math.sqrt((target[0] - drone.position()[0])**2 + (target[1] - drone.position()[1])**2 ) for target in coordinates] for drone in self.agents]
         
         assigner = Munkres()
         assigner.fit(cost_matrix)
@@ -687,3 +687,57 @@ class Swarm:
             msg = general_parameters()
             msg.pose.x,msg.pose.y,msg.pose.z = self.agentsById[id].position()
             self.pose_publishers[id].publish(msg)
+
+    def land_my(self, id, land_height=0.05):
+        gain = 0.5
+        d_h = self.agents[id].position()[2] - land_height
+        while d_h > 0:
+            d_h = self.agents[id].position()[2] - land_height
+            self.agents[id].cmdVelocityWorld(np.array([0, 0, -d_h*gain]), yawRate=0)
+            self.timeHelper.sleep(0.1)
+        self.agents[id].cmdVelocityWorld(np.array([0, 0, 0]), yawRate=0)
+        self.agents[id].stop()
+
+    def is_swarm_landed(self, error=0.05):
+        result = True
+        for agent in self.agents:
+            if agent.position()[2] > error:
+                result = False
+
+        return result
+
+    def land_swarm(self, error = 0.05):
+        gain = 0.5
+        before_starting = time.localtime()
+        timeout = 10
+        
+        while not self.is_swarm_landed(error=error):
+
+            if time.mktime(time.localtime()) - time.mktime(before_starting) > timeout:
+                    print("TIMEOUT!!!")
+                    break
+
+            for agent in self.agents:
+                d_h = agent.position()[2] - error
+                print(d_h)
+                agent.cmdVelocityWorld(np.array([0, 0, -d_h*gain]), yawRate=0)
+                self.timeHelper.sleep(0.01)
+        
+        for agent in self.agents:
+            agent.cmdVelocityWorld(np.array([0, 0, 0]), yawRate=0)
+            agent.stop()
+
+
+    def land_prism(self, d_between):
+        num_of_agents = len(self.agents)
+        print(num_of_agents)
+        coordinates1 = formation_coordinates(d_between, num_of_agents//2, height=d_between+0.5)
+        angle = 360/(num_of_agents)
+        coordinates1_rotated = rotate_coordinates(coordinates1, angle)
+
+        coordinates2 = formation_coordinates(d_between, num_of_agents//2, height=0.5)
+
+        coordinates = self.sort_coordinates(np.concatenate((coordinates1_rotated, coordinates2)))
+
+        self.form_coordinates(coordinates)
+        self.land_swarm()

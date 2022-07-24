@@ -1,0 +1,4 @@
+"areaElimination":50
+"scannerElimination":0,0,400,200
+"verticalDivison":20
+"ColorElimination":200
