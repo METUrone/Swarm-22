@@ -1,0 +1,6 @@
+swarm/Pair start
+swarm/Pair destination
+int32[400] flattenedGrid #20x20 grid flattened row by row
+---
+swarm/Pair[] path
+bool pathFound

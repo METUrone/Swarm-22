@@ -376,10 +376,10 @@ class Swarm:
             self.agents[id].move_global(coordinates[id][0], coordinates[id][1], 5) # makes more stable
 
 
-    def form_via_potential_field(self, radius, timeout = 10, displacement=(0,0,0)): # uses potential field algorithm to form
+    def form_via_potential_field(self, radius, z=1, timeout=10, displacement=(0,0,0)): # uses potential field algorithm to form
         self.radius = radius
 
-        coordinates = self.formation_coordinates(radius, self.num_of_agents,displacement=np.array(displacement))
+        coordinates = self.formation_coordinates(radius, self.num_of_agents,height = z, displacement=np.array(displacement))
         coordinates = self.sort_coordinates(coordinates)
         if self.vehicle == "Crazyflie" or self.vehicle == "TurtleBot":
             before_starting = time.localtime()
@@ -687,3 +687,9 @@ class Swarm:
             msg = general_parameters()
             msg.pose.x,msg.pose.y,msg.pose.z = self.agentsById[id].position()
             self.pose_publishers[id].publish(msg)
+
+    def formation_center(self):
+        pos = np.array([0.0,0.0,0.0])
+        for uav in self.agents:
+            pos += uav.position()
+        return pos / 3
