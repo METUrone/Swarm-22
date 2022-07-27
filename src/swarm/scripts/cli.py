@@ -48,7 +48,7 @@ if __name__ == "__main__":
     vehicle2 = "Crazyflie"
     swarm = Swarm(uav_count, vehicle2)
 
-    
+    swarm.timeHelper.sleep(2)
 
         
 
@@ -80,6 +80,7 @@ if __name__ == "__main__":
         3: LAND
         4: GO
         5: ROTATE
+        6: SLEEP
         """
 
         while is_mission_running:
@@ -123,8 +124,9 @@ if __name__ == "__main__":
                 swarm.form_3d(d, edge)
 
             elif sub_mission == 3:
-                swarm.land()
-                swarm.timeHelper.sleep(3)
+                swarm.hover(2)
+                swarm.land_swarm()
+                swarm.timeHelper.sleep(2)
                 is_mission_running = False
             
             elif sub_mission == 4:
@@ -151,8 +153,21 @@ if __name__ == "__main__":
 
                 swarm.rotate(angle) 
 
+            elif sub_mission == 6:
+                if mod == 1:
+                    duration = float(input("Sleep duration: "))
+                    swarm.hover(duration)
+                    write_mission(duration)
+                elif mod == 2:
+                    duration = float(mission[0][0])
+                    swarm.hover(duration)
+                    del mission[0]
+
             else:
                 print("INVALID ARGUMENT!!!")
+            
+            swarm.hover(0.01)
+        
 
 
     elif mission_num == 2:
@@ -190,7 +205,7 @@ if __name__ == "__main__":
 
             if sub_mission == 1:
                 swarm.land()
-                swarm.timeHelper.sleep(5)
+                swarm.hover(5)
                 break
 
             if sub_mission == 2:
@@ -238,6 +253,8 @@ if __name__ == "__main__":
 
             else:
                 print("INVALID ARGUMENT!!!")
+            
+            swarm.hover(0.01)
     
     elif mission_num == 3:
         sub_missions = """
@@ -280,6 +297,8 @@ if __name__ == "__main__":
 
             if sub_mission == 4:
                 swarm.go(vector)
+            
+            swarm.hover(0.01)
 
     elif mission_num == 4:
         pass

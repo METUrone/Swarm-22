@@ -14,7 +14,8 @@
                 "~/catkin_ws/src/mavros/mavros_msgs/include/**",
                 "~/catkin_ws/src/mavros/test_mavros/include/**",
                 "/usr/include/**",
-                "${workspaceFolder}/devel/include"
+                "${workspaceFolder}/devel/include",
+                "${workspaceFolder}/devel/**"
             ],
             "name": "ROS"
         }

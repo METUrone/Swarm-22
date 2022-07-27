@@ -20,19 +20,24 @@ import rospy
 
 import rospy
 from custom_msg.msg import general_parameters #import custom_msg which is in the workspace
+from swarm.srv import SwarmCmd,SwarmCmdResponse
+
 
 class Swarm:
     def __init__(self,num_of_drones,vehicle, first_time = True, crazyswarm_class=None):
 
-        rospy.init_node("swarm", anonymous=True)
+        #rospy.init_node("swarm", anonymous=True)
 
         self.agents = []
         self.vehicle = vehicle
         self.radius = 2
-        self.num_of_edges = 3
+        self.num_of_edges = num_of_drones
         self.obstacles = {}
         self.repulsive_pts = {}
         self.isPublishing = False
+
+        self.swarmCmd = SwarmCmd()
+        #self.commander_client = rospy.ServiceProxy("/swarm/cmd", SwarmCmd)
 
         self.log = {
     
@@ -53,6 +58,8 @@ class Swarm:
 
                 for i in range(len(self.agents)):
                     self.takeoff(i)
+
+                    #self.commander_client("Takeoff",1,[])
             else:
                 self.timeHelper = crazyswarm_class.timeHelper
             
@@ -196,8 +203,7 @@ class Swarm:
         cost_matrix = [[math.sqrt((target[0] - drone.position()[0])**2 + (target[1] - drone.position()[1])**2) for target in coordinates] for drone in self.agents]
         
         assigner = Munkres()
-        assigner.fit(cost_matrix)
-        assignments = assigner.assign()
+        assignments = assigner.compute(cost_matrix)
         
         for assignment in assignments:
             sorted_coordinates[assignment[0]] = coordinates[assignment[1]]
@@ -340,7 +346,7 @@ class Swarm:
         if self.vehicle == "Crazyflie":
             self.agents[id].cmdVelocityWorld(np.array([vel_x, vel_y, vel_z]), yawRate=0)
             self.timeHelper.sleep(0.001)
-            self.add_log("{}, {}, {}, ".format(vel_x, vel_y, 0), datetime.now(),"{}, {}, {}, ".format(self.agents[id].position()[0],self.agents[id].position()[1],self.agents[id].position()[2]),id)
+            self.add_log("{}, {}, {}, ".format(vel_x, vel_y, vel_z), datetime.now(),"{}, {}, {}, ".format(self.agents[id].position()[0],self.agents[id].position()[1],self.agents[id].position()[2]),id)
 
         elif self.vehicle == "TurtleBot": 
             
@@ -554,7 +560,7 @@ class Swarm:
         for i in self.agents:
             Thread(target=i.move_local, args=(0,0,5)).start()
 
-    def takeoff(self, id, height=1):
+    def takeoff(self, id, height=1.8):
         if self.vehicle == "TurtleBot":
             print("TURTLES CAN NOT FLY !!!")
             return
@@ -625,6 +631,7 @@ class Swarm:
                 print(vector[i][2])
 
         self.form_coordinates(coordinates)
+        print("GONE")
 
     def star_formation(self, radius = 4, angle=0, height = 1):
         pentagon1 = self.formation_coordinates(radius,5,height,np.array([0,0,0]),angle)
@@ -693,3 +700,59 @@ class Swarm:
         for uav in self.agents:
             pos += uav.position()
         return pos / 3
+
+    def land_my(self, id, land_height=0.05):
+            gain = 0.5
+            d_h = self.agents[id].position()[2] - land_height
+            while d_h > 0:
+                d_h = self.agents[id].position()[2] - land_height
+                self.agents[id].cmdVelocityWorld(np.array([0, 0, -d_h*gain]), yawRate=0)
+                self.timeHelper.sleep(0.1)
+            self.agents[id].cmdVelocityWorld(np.array([0, 0, 0]), yawRate=0)
+            self.agents[id].stop()
+
+    def is_swarm_landed(self, error=0.05):
+        result = True
+        for agent in self.agents:
+            if agent.position()[2] > error:
+                result = False
+
+        return result
+
+    def land_swarm(self, error = 0.05):
+        gain = 0.5
+        before_starting = time.localtime()
+        timeout = 3
+        
+        while not self.is_swarm_landed(error=error):
+
+            if time.mktime(time.localtime()) - time.mktime(before_starting) > timeout:
+                    print("TIMEOUT!!!")
+                    break
+
+            for agent in self.agents:
+                d_h = agent.position()[2] - error
+                print(d_h)
+                if d_h < 0.05:
+                    return
+                agent.cmdVelocityWorld(np.array([0, 0, -d_h*gain]), yawRate=0)
+                self.timeHelper.sleep(0.01)
+        
+        for agent in self.agents:
+            agent.cmdVelocityWorld(np.array([0.0, 0.0, 0.0]), yawRate=0.0)
+            self.timeHelper.sleep(1)
+
+
+    def land_prism(self, d_between):
+        num_of_agents = len(self.agents)
+        print(num_of_agents)
+        coordinates1 = formation_coordinates(d_between, num_of_agents//2, height=d_between+0.5)
+        angle = 360/(num_of_agents)
+        coordinates1_rotated = rotate_coordinates(coordinates1, angle)
+
+        coordinates2 = formation_coordinates(d_between, num_of_agents//2, height=0.5)
+
+        coordinates = self.sort_coordinates(np.concatenate((coordinates1_rotated, coordinates2)))
+
+        self.form_coordinates(coordinates)
+        self.land_swarm()
