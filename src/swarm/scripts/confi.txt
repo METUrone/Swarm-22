@@ -1,2 +1,2 @@
-"StartPoints" % X1:100;Y1:100,X2:1000;Y2:600
+"StartPoints" % X1:0;Y1:0,X2:650;Y2:650
 "minAreaElimination"% 50

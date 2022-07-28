@@ -21,11 +21,11 @@ if __name__ == "__main__":
     radius = 3
     vehicle1 = "Iris"
     vehicle2 = "Crazyflie"
-    swarm = Swarm(6, vehicle2)
+    swarm = Swarm(5, vehicle2)
     # swarm.form_3d(1, "prism")
     #swarm.form_via_potential_field(2)
 
-    swarm.form_3d(1,3)
+    swarm.fire_extinguish()
 
     swarm.timeHelper.sleep(5)
 
@@ -43,8 +43,8 @@ if __name__ == "__main__":
     # swarm.omit_agent()
     # swarm.omit_agent()
     # swarm.omit_agent()
-    #swarm.go(np.array([radius,0,0]))
-    #swarm.go(np.array([0,-radius,0]))
+    #swaswarmrm.go(np.array([radius,0,0]))
+    #.go(np.array([0,-radius,0]))
     #swarm.go(np.array([-radius,0,0]))
     #swarm.go(np.array([0,radius,0]))
     #swarm.rotate()

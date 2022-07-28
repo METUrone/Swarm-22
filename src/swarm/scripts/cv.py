@@ -18,7 +18,8 @@ class Vision():
         imgGray = cv2.erode(imgGray,(3,3),iterations=2)
         ret, thresh = cv2.threshold(imgGray, 127, 255, 0)
         contours, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-        print(contours)
+        cv2.imshow("aaaaaaaaaa",imgGray)
+        cv2.waitKey(5000)
         for con in contours:
             area = cv2.contourArea(con)
             if area < self.areaelimination:

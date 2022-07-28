@@ -27,7 +27,7 @@ class Swarm:
         self.agents = []
         self.vehicle = vehicle
         self.radius = 2
-        self.num_of_edges = 3
+        self.num_of_edges = num_of_drones
         self.obstacles = {}
 
         self.log = {
@@ -315,13 +315,13 @@ class Swarm:
         return min(max(float(repulsive_force_x),-1*speed_limit),speed_limit), min(max(float(repulsive_force_y),-1*speed_limit),speed_limit), min(max(float(repulsive_force_z),-1*speed_limit),speed_limit)
 
 
-    def single_potential_field(self, id, coordinates):
+    def single_potential_field(self, id, coordinates, repulsice_constant = -0.9):
 
         #for _ in range(4000):
         #print("id: {}  pose: {}".format(id, self.agents[id].position()))
 
         attractive_force_x, attractive_force_y, attractive_force_z = self.attractive_force(target_pose=coordinates[id], id=id, attractive_constant = 5)
-        repulsive_force_x, repulsive_force_y, repulsive_force_z = self.repulsive_force(id=id)
+        repulsive_force_x, repulsive_force_y, repulsive_force_z = self.repulsive_force(id=id, repulsive_constant=repulsice_constant)
 
         vel_x = attractive_force_x + repulsive_force_x
         vel_y = attractive_force_y + repulsive_force_y
@@ -427,7 +427,7 @@ class Swarm:
             self.stop_all()
             self.timeHelper.sleep(4)           
 
-    def form_coordinates(self, coordinates, timeout = 10): # uses potential field algorithm to form
+    def form_coordinates(self, coordinates, repulsive_constant = -0.9, timeout = 10): # uses potential field algorithm to form
         coordinates = self.sort_coordinates(coordinates)
 
         if self.vehicle == "Crazyflie":
@@ -441,7 +441,7 @@ class Swarm:
 
                 for i in range(len(self.agents)):
                     
-                    self.single_potential_field(i, coordinates)
+                    self.single_potential_field(i, coordinates, repulsice_constant=repulsive_constant)
                     
             self.stop_all()
                   
@@ -657,7 +657,10 @@ class Swarm:
         print(poses)
         print("-----------------")
         
-    def fire_extinguish(self, image_path="test.png", coef_to_cm = 0.01):
+    def fire_extinguish(self, image_path="test.png", pixels = 650, edge_m = 3.5):
+        coef_to_m = edge_m / pixels
+        self.form_via_potential_field(1)
+        self.hover(4)
         vis = Vision()
         image = cv2.imread(image_path,1)
         #cv2.imshow(image_path, image)
@@ -668,18 +671,23 @@ class Swarm:
         cy = ((corners[0][1] + corners[1][1] + corners[2][1] + corners[3][1])/4)
         max_dist = 0
         for i in range(4):
-            dist = ((corners[i][0] - cx)*2) + ((corners[i][1] - cy)*2)
+            dist = ((corners[i][0] - cx)**2) + ((corners[i][1] - cy)**2)
             if dist > max_dist:
                 max_dist = dist
 
-        radius = math.sqrt(max_dist)*coef_to_cm*10
-        cx = cx*coef_to_cm
-        cy = cy*coef_to_cm
+        radius = math.sqrt(max_dist)*coef_to_m
+        cx = cx*coef_to_m - edge_m/2
+        cy =-(cy*coef_to_m - edge_m/2)
+
+        print(radius)
+        print(cx)
+        print(cy)
 
         vectors = np.zeros(shape=(self.num_of_agents,3)) # [id][0: for x, 1: for y, 2: for z]
         displacement = [cx, cy, 1]
 
-        vectors[0][0]=radius
+        vectors[0][0]=max(min(1.5,radius*1.3),0.4)
+        print(vectors[0][0])
         vectors[0][1]=0
         vectors[0][2]=1
 
@@ -695,9 +703,4 @@ class Swarm:
 
         self.obstacles = {(cx, cy):radius}
 
-        self.form_coordinates(coordinates = vectors)
-
-        print(vectors)
-        print(cx)
-        print(cy)
-        print(radius)
+        self.form_coordinates(coordinates = vectors, repulsive_constant = -0.9)
