@@ -180,7 +180,7 @@ if __name__ == "__main__":
             del mission[0]
 
 
-        swarm.form_via_potential_field(d)
+        swarm.form_via_potential_field(d, dimension=2 , z=0.5)
 
         mission2_options = """
         1: LAND
@@ -209,7 +209,7 @@ if __name__ == "__main__":
                 break
 
             if sub_mission == 2:
-                swarm.add_agent_to_formation()
+                swarm.add_agent_to_formation(dimension=2)
 
             if sub_mission == 3:
                 agent_ids = "Select id:\n"

@@ -328,7 +328,7 @@ class Swarm:
         return min(max(float(repulsive_force_x),-1*speed_limit),speed_limit), min(max(float(repulsive_force_y),-1*speed_limit),speed_limit), min(max(float(repulsive_force_z),-1*speed_limit),speed_limit)
 
 
-    def single_potential_field(self, id, coordinates):
+    def single_potential_field(self, id, coordinates, dimension=3):
 
         #for _ in range(4000):
         #print("id: {}  pose: {}".format(id, self.agents[id].position()))
@@ -339,6 +339,9 @@ class Swarm:
         vel_x = attractive_force_x + repulsive_force_x
         vel_y = attractive_force_y + repulsive_force_y
         vel_z = attractive_force_z + repulsive_force_z
+
+        if dimension==2:
+            vel_z=0
 
         turtleBot_constant = 0.1
         rotational_constant = 0.3
@@ -382,7 +385,7 @@ class Swarm:
             self.agents[id].move_global(coordinates[id][0], coordinates[id][1], 5) # makes more stable
 
 
-    def form_via_potential_field(self, radius, z=1, timeout=10, displacement=(0,0,0)): # uses potential field algorithm to form
+    def form_via_potential_field(self, radius, z=1, timeout=10, displacement=(0,0,0), dimension=3): # uses potential field algorithm to form
         self.radius = radius
 
         coordinates = self.formation_coordinates(radius, self.num_of_agents,height = z, displacement=np.array(displacement))
@@ -407,7 +410,10 @@ class Swarm:
                         continue
                     if i in reached: continue
 
-                    self.single_potential_field(i, coordinates)   
+                    if dimension == 3:
+                        self.single_potential_field(i, coordinates)  
+                    else:
+                        self.single_potential_field(i, coordinates, dimension=2)  
             self.stop_all()                 
                 
             
@@ -420,7 +426,7 @@ class Swarm:
             self.stop_all()
             self.timeHelper.sleep(4)  
                   
-    def form_polygon(self, distance_between, num_of_edges,height=1, displacement=np.array([0,0,0]), timeout = 10): # uses potential field algorithm to form
+    def form_polygon(self, distance_between, num_of_edges,height=1, displacement=np.array([0,0,0]), timeout = 10, dimension=2): # uses potential field algorithm to form
         
         radius = distance_to_radius(distance_between,num_of_edges) # converts distance between agents to formation radius
         coordinates = self.sort_coordinates(self.formation_coordinates(radius, num_of_edges, height, displacement))
@@ -436,7 +442,7 @@ class Swarm:
             #for i in range(4000):
                 for i in range(len(self.agents)):
                     
-                    self.single_potential_field( i, coordinates)
+                    self.single_potential_field( i, coordinates, dimension=dimension)
                     
             self.stop_all()
             self.timeHelper.sleep(4)           
@@ -560,7 +566,7 @@ class Swarm:
         for i in self.agents:
             Thread(target=i.move_local, args=(0,0,5)).start()
 
-    def takeoff(self, id, height=1.8):
+    def takeoff(self, id, height=1):
         if self.vehicle == "TurtleBot":
             print("TURTLES CAN NOT FLY !!!")
             return
@@ -590,13 +596,13 @@ class Swarm:
             for i in range(len(self.agents)):
                 self.agents[i].cmdVelocityWorld(np.array([0.0, 0.0, 0.0]), yawRate=0)
 
-    def add_agent_to_formation(self):
+    def add_agent_to_formation(self, dimension=3):
         self.agents.append(self.crazyswarm.allcfs.crazyflies[len(self.agents)])
         self.num_of_agents += 1
 
         self.takeoff(len(self.agents)-1)
         self.timeHelper.sleep(1)
-        self.form_polygon(self.radius, len(self.agents))
+        self.form_polygon(self.radius, len(self.agents), dimension=dimension)
         self.timeHelper.sleep(2)
 
     def omit_agent(self):

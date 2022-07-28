@@ -1,45 +1,45 @@
 crazyflies:
-- channel: 80
-  id: 231
-  initialPosition: [0.0, 0.0, 0.0]
+# - channel: 80
+#   id: 231
+#   initialPosition: [0.0, 0.0, 0.0]
+#   type: default
+- channel: 100
+  id: 1
+  initialPosition: [1, 0, 0]
   type: default
-# - channel: 100
-#   id: 1
-#   initialPosition: [1, 0, 0]
-#   type: default
-# - channel: 100
-#   id: 2
-#   initialPosition: [1.5, 0.5, 0.0]
-#   type: default
-# - channel: 100
-#   id: 3
-#   initialPosition: [1.5, -0.5, 0.0]
-#   type: default
-# - channel: 100
-#   id: 4
-#   initialPosition: [1.5, 1.5, 0.0]
-#   type: default
-# - channel: 100
-#   id: 5
-#   initialPosition: [2, 2, 0]
-#   type: default
-# - channel: 100
-#   id: 6
-#   initialPosition: [2.5, 2.5, 0.0]
-#   type: default
-# - channel: 100
-#   id: 7
-#   initialPosition: [3, 3, 0.0]
-#   type: default
-# - channel: 100
-#   id: 8
-#   initialPosition: [3.5, 3.5, 0.0]
-#   type: default
-# - channel: 100
-#   id: 9
-#   initialPosition: [4, 4, 0]
-#   type: default
-# - channel: 100
-#   id: 10
-#   initialPosition: [4.5, 4.5, 0.0]
-#   type: default
+- channel: 100
+  id: 2
+  initialPosition: [1.5, 0.5, 0.0]
+  type: default
+- channel: 100
+  id: 3
+  initialPosition: [1.5, -0.5, 0.0]
+  type: default
+- channel: 100
+  id: 4
+  initialPosition: [1.5, 1.5, 0.0]
+  type: default
+- channel: 100
+  id: 5
+  initialPosition: [2, 2, 0]
+  type: default
+- channel: 100
+  id: 6
+  initialPosition: [2.5, 2.5, 0.0]
+  type: default
+- channel: 100
+  id: 7
+  initialPosition: [3, 3, 0.0]
+  type: default
+- channel: 100
+  id: 8
+  initialPosition: [3.5, 3.5, 0.0]
+  type: default
+- channel: 100
+  id: 9
+  initialPosition: [4, 4, 0]
+  type: default
+- channel: 100
+  id: 10
+  initialPosition: [4.5, 4.5, 0.0]
+  type: default
