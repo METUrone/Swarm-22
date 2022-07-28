@@ -15,7 +15,8 @@
                 "~/catkin_ws/src/mavros/test_mavros/include/**",
                 "/usr/include/**",
                 "${workspaceFolder}/devel/include",
-                "${workspaceFolder}/devel/**"
+                "${workspaceFolder}/devel/**",
+                "/opt/ros/noetic/**"
             ],
             "name": "ROS"
         }

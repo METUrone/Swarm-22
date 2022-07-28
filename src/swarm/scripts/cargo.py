@@ -52,7 +52,6 @@ class Cargo:
 
     @classmethod
     def callAStar(cls,start,dest,grid):
-        global last_path
         s = Pair()
         s.first,s.second = int(start[0]),int(start[1])
         d = Pair()
@@ -60,12 +59,12 @@ class Cargo:
         try:
             resp = cls.caller(s,d,grid.flatten().tolist())
             if resp.pathFound:
-                last_path = resp.path
-                last_path.pop()
-                return last_path.pop() # return the next step
+                cls.last_path = resp.path
+                cls.last_path.pop()
+                return cls.last_path.pop() # return the next step
             else:
-                if last_path:
-                    return last_path.pop() # blocked, return the next step
+                if cls.last_path:
+                    return cls.last_path.pop() # blocked, return the next step
                 else:
                     return s # blocked, proceed anyway
         except rospy.ServiceException as e:
@@ -89,14 +88,14 @@ class Cargo:
 
     @classmethod
     def execute(cls,z = 1,t1 = 5):
-        lim = 2.6 # width of the square our formation center can be in
-        grid_w = 20
-        dest_pt = np.array([-1.3,0])
+        cls.lim = 2.6 # width of the square our formation center can be in
+        cls.grid_w = 20
+        cls.dest_pt = np.array([-1.3,0])
         uav_count = 3
         radius = 0.4
 
-        last_path = None
-        base_grid = np.ones([grid_w,grid_w],dtype=int)
+        cls.last_path = None
+        cls.base_grid = np.ones([cls.grid_w,cls.grid_w],dtype=int)
         rospy.init_node('rosapi', anonymous=True)
         print("Connecting to drones")
         for id in cls.opponent_poses:
@@ -104,7 +103,7 @@ class Cargo:
             print("Connected to drone with id " + id)
         print("Waiting for A* Handler")
         rospy.wait_for_service('/astar/calc')
-        caller = rospy.ServiceProxy('/astar/calc', AStarReq)
+        cls.caller = rospy.ServiceProxy('/astar/calc', AStarReq)
         print("Done!")
         
         swarm = Swarm(uav_count, "Crazyflie")
@@ -115,19 +114,19 @@ class Cargo:
         swarm.repulsive_pts = cls.opponent_poses
         opponent_pt = cls.opponent_center()
         current_idx = cls.coord2idx(current_pt[:2])
-        while(cls.calcError(*dest_pt[:2],*current_pt[:2]) > 0.3): #30 cm error allowed
+        while(cls.calcError(*cls.dest_pt[:2],*current_pt[:2]) > 0.3): #30 cm error allowed
             if opponent_pt[2] < (z-0.3): #Maybe the opponent falled
-                grid = base_grid
+                grid = cls.base_grid
             else:
-                grid = base_grid.copy()
+                grid = cls.base_grid.copy()
                 cls.createObstacle(grid,opponent_pt[0],opponent_pt[1])
                 grid[current_idx[0],current_idx[1]] = 1
                 
-            a = cls.callAStar(current_idx,cls.coord2idx(dest_pt),grid)
+            a = cls.callAStar(current_idx,cls.coord2idx(cls.dest_pt),grid)
             if False:
                 grid[current_idx[0],current_idx[1]] = 8
                 print(grid)
-                print(round(cls.calcError(*dest_pt,*current_pt[:2]),2),end="\t")
+                print(round(cls.calcError(*cls.dest_pt,*current_pt[:2]),2),end="\t")
                 print(current_idx,end="\t")
                 print(current_pt[:2],end="\t")
                 print(f"{a.first} {a.second}",end="\t")

@@ -17,11 +17,11 @@ from utils import *
 from geometry_msgs.msg import PoseStamped
 import copy
 import rospy
-
-import rospy
 from custom_msg.msg import general_parameters #import custom_msg which is in the workspace
 from swarm.srv import SwarmCmd,SwarmCmdResponse
-
+from ika import IkaSwarm,Ika
+import cv2
+from cv import Vision
 
 class Swarm:
     def __init__(self,num_of_drones,vehicle, first_time = True, crazyswarm_class=None):
@@ -154,7 +154,7 @@ class Swarm:
 
         return angle if math.pi <=angle else -angle
 
-    def is_goal_reached(self, id, goal,error_radius=0.25):# 15 cm default error radius, goal is a numpy array
+    def is_goal_reached(self, id, goal,error_radius=0.20):# 15 cm default error radius, goal is a numpy array
         
         pose = self.agents[id].position()
 
@@ -756,3 +756,54 @@ class Swarm:
 
         self.form_coordinates(coordinates)
         self.land_swarm()
+
+    def fire_extinguish(self, image_path="test.png", pixels = 650, edge_m = 3.5):
+        coef_to_m = edge_m / pixels
+        self.ikaSwarm = IkaSwarm(["F1","F2"])
+        self.ikaSwarm.form(1)
+        self.form_via_potential_field(1)
+        self.hover(4)
+        vis = Vision()
+        image = cv2.imread(image_path,1)
+        #cv2.imshow(image_path, image)
+        #cv2.waitKey(0)
+        corners = vis.main(image)
+        print(corners)
+        cx = ((corners[0][0] + corners[1][0] + corners[2][0] + corners[3][0])/4)
+        cy = ((corners[0][1] + corners[1][1] + corners[2][1] + corners[3][1])/4)
+        max_dist = 0
+        for i in range(4):
+            dist = ((corners[i][0] - cx)**2) + ((corners[i][1] - cy)**2)
+            if dist > max_dist:
+                max_dist = dist
+
+        radius = math.sqrt(max_dist)*coef_to_m
+        cx = cx*coef_to_m - edge_m/2
+        cy =-(cy*coef_to_m - edge_m/2)
+
+        print(radius)
+        print(cx)
+        print(cy)
+
+        vectors = np.zeros(shape=(self.num_of_agents,3)) # [id][0: for x, 1: for y, 2: for z]
+        displacement = [cx, cy, 1]
+
+        vectors[0][0]=max(min(1.5,radius*1.3),0.4)
+        print(vectors[0][0])
+        vectors[0][1]=0
+        vectors[0][2]=1
+
+        angle = degree_to_radian(360/self.num_of_edges)
+        agent_angle = 0
+
+        for i in range(self.num_of_edges):
+            agent_angle = i*angle
+            vectors[i][0] = math.floor((radius*math.cos(agent_angle) + displacement[0]) * 1000)/ 1000
+            vectors[i][1] = math.floor((radius*math.sin(agent_angle) + displacement[1]) * 1000)/ 1000
+            vectors[i][2] = math.floor((1 + displacement[2]) * 1000)/ 1000
+
+
+        self.obstacles = {(cx, cy):radius}
+
+        self.ikaSwarm.form(radius,np.array([cx,cy,0]))
+        self.form_coordinates(coordinates = vectors, repulsive_constant = -0.9)
