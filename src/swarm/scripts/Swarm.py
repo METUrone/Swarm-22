@@ -200,7 +200,7 @@ class Swarm:
 
     def sort_coordinates(self, coordinates):
         sorted_coordinates = [[0, 0]]*self.num_of_agents
-        cost_matrix = [[math.sqrt((target[0] - drone.position()[0])**2 + (target[1] - drone.position()[1])**2) for target in coordinates] for drone in self.agents]
+        cost_matrix = [[math.sqrt((target[0] - drone.position()[0])**2 + (target[1] - drone.position()[1])**2 + (target[2] - drone.position()[2])**2) for target in coordinates] for drone in self.agents]
         
         assigner = Munkres()
         assignments = assigner.compute(cost_matrix)

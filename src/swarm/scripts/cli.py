@@ -125,7 +125,9 @@ if __name__ == "__main__":
 
             elif sub_mission == 3:
                 swarm.hover(2)
-                swarm.land_swarm()
+                # swarm.form_via_potential_field(d, dimension=3 , z=0.5)
+                swarm.land_prism(1)
+                # swarm.land_swarm()
                 swarm.timeHelper.sleep(2)
                 is_mission_running = False
             
