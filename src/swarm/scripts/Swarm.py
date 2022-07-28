@@ -686,7 +686,7 @@ class Swarm:
         
     
     def init_pose_pub(self):
-        self.pose_publishers = {id:rospy.Publisher(f"general_parameters/METUrone_{id:X}", general_parameters, queue_size=10) for id in self.agentsById}
+        self.pose_publishers = {id:rospy.Publisher(f"general_parameters/METUrone_{id:02X}", general_parameters, queue_size=10) for id in self.agentsById}
         self.isPublishing = True
 
     def pub_pose(self):
