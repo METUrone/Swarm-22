@@ -74,6 +74,7 @@ if __name__ == "__main__":
 
     if mission_num == 1:
         is_mission_running = True
+        is_formation_pyrimide = False
         mission1_options = """
         1: PYRAMID
         2: PRISM
@@ -103,6 +104,7 @@ if __name__ == "__main__":
                     del mission[0]
 
                 swarm.form_3d(d, "prism")
+                is_formation_pyrimide = True
 
             elif sub_mission == 2:
                 
@@ -122,10 +124,16 @@ if __name__ == "__main__":
                     del mission[0]
                 
                 swarm.form_3d(d, edge)
+                is_formation_pyrimide = False
 
             elif sub_mission == 3:
                 swarm.hover(2)
-                swarm.land_swarm()
+                # swarm.form_via_potential_field(d, dimension=3 , z=0.5)
+                if not is_formation_pyrimide:
+                    swarm.land_prism(1)
+                else:
+                    swarm.land_swarm()
+                # swarm.land_swarm()
                 swarm.timeHelper.sleep(2)
                 is_mission_running = False
             
@@ -180,7 +188,7 @@ if __name__ == "__main__":
             del mission[0]
 
 
-        swarm.form_via_potential_field(d)
+        swarm.form_via_potential_field(d, dimension=2 , z=0.5)
 
         mission2_options = """
         1: LAND
@@ -204,14 +212,14 @@ if __name__ == "__main__":
                 del mission[0]
 
             if sub_mission == 1:
-                swarm.land()
+                swarm.land_swarm()
                 swarm.hover(5)
                 break
 
-            if sub_mission == 2:
-                swarm.add_agent_to_formation()
+            elif sub_mission == 2:
+                swarm.add_agent_to_formation(dimension=2)
 
-            if sub_mission == 3:
+            elif sub_mission == 3:
                 agent_ids = "Select id:\n"
                 for i in range(len(swarm.agents)):
                     agent_ids += str(i)
@@ -228,7 +236,7 @@ if __name__ == "__main__":
 
                 swarm.omit_agent_by_id(id)
 
-            if sub_mission == 4:
+            elif sub_mission == 4:
                 if mod == 1:
                     vector = str(input("Direction vector: "))
                     write_mission(vector)
@@ -253,6 +261,7 @@ if __name__ == "__main__":
 
             else:
                 print("INVALID ARGUMENT!!!")
+                print(sub_mission)
             
             swarm.hover(0.01)
     
