@@ -1,10 +1,10 @@
 # Aim
 
-This project aims to provide an OOP based heterogeneous swarm system independent of the vehicle types and motion dynamics.
+This project aims to provide an OOP based heterogeneous swarm system independent of the vehicle types and motion dynamics. Currently we are using the system with crazyflies.
 
 ## Installation
 
-First of all, you need to install [ros noetic](http://wiki.ros.org/noetic/Installation/Ubuntu) and [crazyswarm](https://crazyswarm.readthedocs.io/en/latest/installation.html). Choose the crazyswarm version for physical robot and simulation. <br /><br />
+First of all, you need to install [ROS noetic](http://wiki.ros.org/noetic/Installation/Ubuntu) and [crazyswarm](https://crazyswarm.readthedocs.io/en/latest/installation.html). Choose the crazyswarm version for physical robot and simulation. <br /><br />
 Build workspace.
 ```
 mkdir -p ~/workspace_name/src
@@ -12,7 +12,7 @@ cd ~/workspace_name
 catkin_make
 ```
 
-Clone the ros package.
+Clone the ROS package.
 ```
 cd ~/workspace_name/src
 git clone https://github.com/METUrone/Swarm-22.git
