@@ -1,0 +1,16 @@
+{
+    "python.autoComplete.extraPaths": [
+        "/home/mert/last-version/Swarm-22/devel/lib/python3/dist-packages",
+        "/home/mert/Swarm-22/devel/lib/python3/dist-packages",
+        "/opt/ros/noetic/lib/python3/dist-packages",
+        "/home/mert/crazyswarm/ros_ws/src/crazyswarm/scripts",
+        "/home/mert/crazyswarm/ros_ws/src/crazyswarm/scripts"
+    ],
+    "python.analysis.extraPaths": [
+        "/home/mert/last-version/Swarm-22/devel/lib/python3/dist-packages",
+        "/home/mert/Swarm-22/devel/lib/python3/dist-packages",
+        "/opt/ros/noetic/lib/python3/dist-packages",
+        "/home/mert/crazyswarm/ros_ws/src/crazyswarm/scripts",
+        "/home/mert/crazyswarm/ros_ws/src/crazyswarm/scripts"
+    ]
+}
