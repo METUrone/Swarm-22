@@ -47,4 +47,10 @@ Important Points:
 
 - Crazyflies positions in real-life must be as close as possible to the positions which are determined in crazyflies.yaml files.
 
+## Comman Issues and Solutions
+- ### fatal error: swarm/AStarReq.h: No such file or directory
+
+    Comment out the lines between 152-171 in the CMakeList.txt file which is in the Swarm-22 folder. Run ```catkin_make```. Then return to the original version of CMakeList.txt and run ```catkin_make``` again.
+
+
 
