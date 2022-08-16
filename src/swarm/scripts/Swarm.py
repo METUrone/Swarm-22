@@ -15,13 +15,14 @@ from TurtleBot import TurtleBot
 from pycrazyswarm import Crazyswarm
 from utils import *
 from geometry_msgs.msg import PoseStamped
-import copy
 import rospy
-from custom_msg.msg import general_parameters #import custom_msg which is in the workspace
-from swarm.srv import SwarmCmd,SwarmCmdResponse
-from ika import IkaSwarm,Ika
+# from custom_msg.msg import general_parameters #import custom_msg which is in the workspace
+# from swarm.srv import SwarmCmd,SwarmCmdResponse
+#from ika import IkaSwarm,Ika
 import cv2
 from cv import Vision
+import sys
+sys.path.append("/home/tan/crazyswarm/ros_ws/src/crazyswarm/scripts")
 
 class Swarm:
     def __init__(self,num_of_drones,vehicle, first_time = True, crazyswarm_class=None):
@@ -36,7 +37,7 @@ class Swarm:
         self.repulsive_pts = {}
         self.isPublishing = False
 
-        self.swarmCmd = SwarmCmd()
+        # self.swarmCmd = SwarmCmd()
         #self.commander_client = rospy.ServiceProxy("/swarm/cmd", SwarmCmd)
 
         self.log = {

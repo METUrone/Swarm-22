@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-from matplotlib.pyplot import grid
 import rospy
 import numpy as np
 import math
