@@ -23,14 +23,24 @@ import cv2
 from cv import Vision
 
 class Swarm:
-    def __init__(self,num_of_drones,vehicle, first_time = True, crazyswarm_class=None):
+    def __init__(self,num_of_agents,vehicle, first_time = True, crazyswarm_class=None):
+
+        """
+            :param num_of_agents: number of the drones that you want in the swarm.
+            :param vehicle: venicle type must be one of the followings: Crazyflie, Iris, TurtleBot
+            :param first_time: Indicates that there is no Crazysarm object constructed beforehands. (Default: ``'True'``)
+
+            Constructs a Crazyswarm object, holds specified num_of_drones of drones in a list and takes off the drones in the list.
+            On the runtime there should be only one Crazyswarm object. Thus, to split the swarm give 'first_time = False' as an arguement. 
+            This will construct Swarm object without constructing Crazyswarm object.
+        """
 
         #rospy.init_node("swarm", anonymous=True)
 
         self.agents = []
         self.vehicle = vehicle
         self.radius = 2
-        self.num_of_edges = num_of_drones
+        self.num_of_edges = num_of_agents
         self.obstacles = {}
         self.repulsive_pts = {}
         self.isPublishing = False
@@ -51,7 +61,7 @@ class Swarm:
         if vehicle == "Crazyflie":
             if first_time:
                 self.crazyswarm = Crazyswarm()
-                self.agents = self.crazyswarm.allcfs.crazyflies[0:num_of_drones]
+                self.agents = self.crazyswarm.allcfs.crazyflies[0:num_of_agents]
                 self.agentsById = self.crazyswarm.allcfs.crazyfliesById
                 self.timeHelper = self.crazyswarm.timeHelper
 
@@ -66,7 +76,7 @@ class Swarm:
         
         elif vehicle == "Iris":
             
-            for i in range(num_of_drones):
+            for i in range(num_of_agents):
                 self.add_drone(i)
 
             for i in range(len(self.agents)):
@@ -76,15 +86,22 @@ class Swarm:
 
         elif vehicle == "TurtleBot":
 
-            for i in range(num_of_drones):
+            for i in range(num_of_agents):
                 self.add_turtlebot(i)
 
-        self.num_of_agents = num_of_drones
+        self.num_of_agents = num_of_agents
 
         simulation_origin_latitude = 47.3977419
         simulation_origin_longitude = 8.5455935
 
     def hover(self,sleep_time:float):
+        """
+            :param sleep_time: duration of sleep
+            :return: None
+
+            Written to be used instead of sleep function. Simply sends [0, 0, 0] velocity command during sleep_time amount of time.
+            To keep the drones stay in flight we need to send velocity command continuously. Sleep function does not provide this.
+        """
         now = self.timeHelper.time()
         while (self.timeHelper.time()-now) < sleep_time:
             # print(self.timeHelper.time())
@@ -92,17 +109,22 @@ class Swarm:
             for uav in self.agents:
                 uav.cmdVelocityWorld(np.array([0.0, 0.0, 0.0]), 0.0)
 
-    def form_3d(self, radius, num_edges, h=0.5):
-        if num_edges == "prism":
+    def form_3d(self, distance_between, num_edges, h=0.5):
+        """
+            :param distance_between: distance between drones i.e. edge length of the 2d regular polygon in meters (height is determined to be 1 meter)
+            :param num_edges: number of edges in the 2d regular polygon (e.g 3 for triangular prism). Give 'num_of_edges = pyramid' to form pyramid. 
+            :param h: height of the prism. (Default: ``'0.5'``)
+        """
+        if num_edges == "pyramid":
 
-            coordinates = self.sort_coordinates(np.concatenate((self.formation_coordinates(0, 1, height=radius+h), self.formation_coordinates(radius, len(self.agents)-1, height=h))))
+            coordinates = self.sort_coordinates(np.concatenate((self.formation_coordinates(0, 1, height=distance_between+h), self.formation_coordinates(distance_between, len(self.agents)-1, height=h))))
             print(coordinates)
             self.form_coordinates(coordinates=coordinates)
             
         elif num_edges == "cylinder": # Here circle function can be used.
             pass
         else:
-            coordinates = self.sort_coordinates(np.concatenate((self.formation_coordinates(distance_between=radius, num_of_edges=num_edges, height=1.5), self.formation_coordinates(radius, num_of_edges=num_edges, height=0.5))))
+            coordinates = self.sort_coordinates(np.concatenate((self.formation_coordinates(distance_between=distance_between, num_of_edges=num_edges, height=1.5), self.formation_coordinates(distance_between, num_of_edges=num_edges, height=0.5))))
             print(coordinates)
             self.form_coordinates(coordinates=coordinates)
 
@@ -179,6 +201,18 @@ class Swarm:
 
 
     def formation_coordinates(self,distance_between, num_of_edges, height = 1, displacement=np.array([0,0,0]) ,rotation_angle=0):
+        """ Provides coordinates to regular polygon with specified edge count and edge length.
+
+        Args:
+            distance_between (float): edge length of the polygon.
+            num_of_edges (int): edge count of the polygon.
+            height (int, optional): height of the formation if it is 3d. Defaults to 1.
+            displacement (np.array, optional): numpy ndarray with shape (3, ). Defaults to np.array([0,0,0]).
+            rotation_angle (int, optional): Defaults to 0.
+
+        Returns:
+            ndarray: list of coordinates to form intended formation
+        """
         vectors = np.zeros(shape=(num_of_edges,3)) # [id][0: for x, 1: for y, 2: for z]
         self.num_of_edges = num_of_edges
         radius = distance_to_radius(distance_between, num_of_edges)
@@ -198,6 +232,14 @@ class Swarm:
         return vectors
 
     def sort_coordinates(self, coordinates):
+        """ Assign each coordinate to drones in a way that minimizes total distance that drones will travel. Munkres (Hungarian) Algorithm is used. 
+
+        Args:
+            coordinates (ndarray): list of coordinates to form intended formation.
+
+        Returns:
+            ndarray: sorted coordinates (i.e. nth element is the coordinate that is assigned to nth drone in the agents list).
+        """
         sorted_coordinates = [[0, 0]]*self.num_of_agents
         cost_matrix = [[math.sqrt((target[0] - drone.position()[0])**2 + (target[1] - drone.position()[1])**2 + (target[2] - drone.position()[2])**2) for target in coordinates] for drone in self.agents]
         
@@ -210,6 +252,16 @@ class Swarm:
         return sorted_coordinates
 
     def attractive_force(self, id, target_pose, attractive_constant = 2):
+        """This is a part of Artifical Potential Field Algorithm. It calculates attractive component of the velocity vector.
+
+        Args:
+            id (int): id of the drone that is subjected to attractive force of the target.
+            target_pose (ndarray): coordinate of the target.
+            attractive_constant (int, optional): Scalar that is used to calculate attractive force. Defaults to 2.
+
+        Returns:
+            ndarray: attractive component of the velocity vector.
+        """
         speed_limit = 0.9 # must be float
 
         attractive_force_x = (target_pose[0] - self.agents[id].position()[0])*attractive_constant
@@ -219,7 +271,16 @@ class Swarm:
         return min(max(float(attractive_force_x),-1*speed_limit),speed_limit), min(max(float(attractive_force_y),-1*speed_limit),speed_limit), min(max(float(attractive_force_z),-1*speed_limit),speed_limit)
 
     def attractive_force_pid(self, id, target_pose, attractive_constant = 2):
+        """It calculates attractive component of the velocity vector if we want to use PID instead of Artifical Potential Field Algorithm
 
+        Args:
+            id (int): id of the drone that is subjected to attractive force of the target.
+            target_pose (ndarray): coordinate of the target.
+            attractive_constant (int, optional): Scalar that is used to calculate attractive force. Defaults to 2.
+
+        Returns:
+            ndarray: attractive component of the velocity vector.
+        """
         speed_limit = 0.9 # must be float
         proportional_gain = 0.5
         integral_gain = 1
@@ -237,7 +298,17 @@ class Swarm:
 
         return min(max(float(attractive_force_x),-1*speed_limit),speed_limit), min(max(float(attractive_force_y),-1*speed_limit),speed_limit)
 
-    def repulsive_force_pid(self,id, repulsive_constant =-0.09,repulsive_threshold = 1.5): # repuslsive constant must be negative -0.2
+    def repulsive_force_pid(self,id, repulsive_constant =-0.09,repulsive_threshold = 1.5): # repuslsive constant must be negative -0.2  
+        """It calculates repulsive component of the velocity vector if we want to use PID. It considers all obstacle and agents if the distance is smaller than repulsive threshold.
+
+        Args:
+            id (int): id of the drone that is subjected to repulsive forces from obstacles and other agents.
+            repulsive_constant (float, optional): Scalar that is used to calculate repulsive forces. Defaults to -0.09.
+            repulsive_threshold (float, optional): Treshold that describes radius of the area where the agent will be subject to repulsive force from the particular obstacle or agent. Defaults to 1.5.
+
+        Returns:
+            ndarray: repulsive component of the velocity vector.
+        """
         repulsive_force_x = 0
         repulsive_force_y = 0
         speed_limit = 0.8 # must be float
@@ -267,6 +338,16 @@ class Swarm:
         return min(max(float(repulsive_force_x),-1*speed_limit),speed_limit), min(max(float(repulsive_force_y),-1*speed_limit),speed_limit)
 
     def repulsive_force(self,id, repulsive_constant =-0.9,repulsive_threshold = 1.3): # repuslsive constant must be negative
+        """It calculates repulsive component of the velocity vector. It considers all obstacle and agents if the distance is smaller than repulsive threshold.
+
+        Args:
+            id (int): id of the drone that is subjected to repulsive forces from obstacles and other agents.
+            repulsive_constant (float, optional): Scalar that is used to calculate repulsive forces. Defaults to -0.09.
+            repulsive_threshold (float, optional): Treshold that describes radius of the area where the agent will be subject to repulsive force from the particular obstacle or agent. Defaults to 1.3.
+
+        Returns:
+            ndarray: repulsive component of the velocity vector.
+        """
         repulsive_force_x = 0
         repulsive_force_y = 0
         repulsive_force_z = 0
@@ -328,6 +409,13 @@ class Swarm:
 
 
     def single_potential_field(self, id, coordinates, dimension=3):
+        """Calculates the velocity vector of the agent with specified id in a single frame. It is a part of Artificial Potential Field Algorithm.
+
+        Args:
+            id (id): id of the subject drone
+            coordinates (ndarray): coordinates of the targets
+            dimension (int, optional): dimension of the target formation (2 for 2d, 3 for 3d). Defaults to 3.
+        """
 
         #for _ in range(4000):
         #print("id: {}  pose: {}".format(id, self.agents[id].position()))
@@ -366,6 +454,12 @@ class Swarm:
             self.agents[id].move_global(coordinates[id][0], coordinates[id][1], 5) # makes more stable
 
     def single_potential_field_pid(self, id, coordinates):
+        """Calculates the velocity vector of the agent with specified id in a single frame. It is a part of PID.
+
+        Args:
+            id (id): id of the subject drone
+            coordinates (ndarray): coordinates of the targets
+        """
     #for _ in range(4000):
     #print("id: {}  pose: {}".format(id, self.agents[id].position()))
         attractive_force_x, attractive_force_y = self.attractive_force(target_pose=coordinates[id], id=id)
@@ -385,6 +479,19 @@ class Swarm:
 
 
     def form_via_potential_field(self, radius, z=1, timeout=5, displacement=(0,0,0), dimension=3, error=0.1): # uses potential field algorithm to form
+        """
+        Calculates coordinates to regular polygon with specified edge count and edge length.
+        Assigns each coordinate to agents in a way that minimizes total distance that agents will travel. 
+        Calculates and sends velocity commands to the agents frame by frame until they reach to their assigned targets (Artificial Potential Field Algorithm is used).
+
+        Args:
+            radius (int): 
+            z (int, optional): z coordinate of the formation (i.e. height). Defaults to 1.
+            timeout (int, optional): Amount of idle time that makes us suspect from infinite loop. Defaults to 5.
+            displacement (tuple, optional): origin of the formation. Defaults to (0,0,0).
+            dimension (int, optional): dimension of the formation. Defaults to 3.
+            error (float, optional): Treshold that convince us that agents reached to goal. Defaults to 0.1.
+        """
         self.radius = radius
 
         coordinates = self.formation_coordinates(radius, self.num_of_agents,height = z, displacement=np.array(displacement))
@@ -471,6 +578,11 @@ class Swarm:
             Thread(target=self.agents[i].move_global, args=(coordinates[i][0], coordinates[i][1], 5)).start()
 
     def split_formation(self):
+        """split swarm into two swarms.
+
+        Returns:
+            (Crazyswarm, Crazyswarm): two swarms
+        """
         swarm1 = Swarm(self.num_of_agents//2, self.vehicle, False, self.crazyswarm)
         swarm1.agents = self.crazyswarm.allcfs.crazyflies[0 : self.num_of_agents//2]
         swarm2 = Swarm(self.num_of_agents-self.num_of_agents//2, self.vehicle, False, self.crazyswarm)
@@ -485,6 +597,12 @@ class Swarm:
         return swarm1, swarm2
 
     def obstacle_creator(self, num_obstacles, obstacle_radius):
+        """Defines some of the agents as obstacles. Used for testing.
+
+        Args:
+            num_obstacles (int): number of obstacles 
+            obstacle_radius (int): radius of obstacles (they are cylinders)
+        """
         for i in range(num_obstacles):
             self.obstacles[i] = self.agents[i].position()
             # self.obstacles[i].append(0.1)
@@ -493,6 +611,12 @@ class Swarm:
         self.num_of_agents = self.num_of_agents-num_obstacles
     
     def obstacle_creator_without_drones(self, array_of_obstacles, obstacle_radius = 0.1):
+        """Defines virtual obstacles that are unvisible. Used for testing.
+
+        Args:
+            array_of_obstacles (ndarray): Array of coordinates of obstacles
+            obstacle_radius (float, optional): radius of obstacles (they are cylinders). Defaults to 0.1.
+        """
         for i in range(len(array_of_obstacles)):
             self.obstacles[i] = array_of_obstacles[i]
             # self.obstacles[i].append(obstacle_radius)
@@ -766,6 +890,16 @@ class Swarm:
         self.land_swarm()
 
     def fire_extinguish(self, image_path="test.png", pixels = 650, edge_m = 3.5):
+        """
+        detects the area whose colour is similar to colour of fire.
+        extracts information of coordinate of its center and its radius
+        encircles its surroundings without passing through area of fire
+
+        Args:
+            image_path (str, optional): path of the image that contains fire. Defaults to "test.png".
+            pixels (int, optional): pixel size in the image. Defaults to 650.
+            edge_m (float, optional): side length of the image in meters. Defaults to 3.5.
+        """
         coef_to_m = edge_m / pixels
         self.ikaSwarm = IkaSwarm(["F1","F2"])
         self.ikaSwarm.form(1)
